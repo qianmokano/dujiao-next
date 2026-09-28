@@ -54,10 +54,10 @@ curl -fsS http://127.0.0.1:8080/health
 
 ## 3. 配置 Nginx 与 HTTPS
 
-`nginx.conf` 是首次启用的 HTTP 配置，安装后 Certbot 会在 Nginx 配置中加入 HTTPS 设置；之后不要直接用此模板覆盖已签发证书的站点配置。此域名经过 Cloudflare 代理；`cloudflare-real-ip.conf` 仅信任 [Cloudflare 官方 IP 网段](https://www.cloudflare.com/ips/)传来的 `CF-Connecting-IP`，使 Nginx 和应用的限流、审计拿到访客 IP。Cloudflare 网段变更时应更新此文件并重新加载 Nginx；不要直接信任来自任意地址的同名请求头。
+`nginx.conf` 是首次启用的 HTTP 配置，安装后 Certbot 会在 Nginx 配置中加入 HTTPS 设置；之后不要直接用此模板覆盖已签发证书的站点配置。此域名经过 Cloudflare 代理；`dujiao-cloudflare-real-ip.conf` 仅信任 [Cloudflare 官方 IP 网段](https://www.cloudflare.com/ips/)传来的 `CF-Connecting-IP`，使 Nginx 和应用的限流、审计拿到访客 IP。Cloudflare 网段变更时应更新此文件并重新加载 Nginx；不要直接信任来自任意地址的同名请求头。
 
 ```bash
-sudo install -Dm0644 cloudflare-real-ip.conf /etc/nginx/snippets/dujiao-cloudflare-real-ip.conf
+sudo install -Dm0644 dujiao-cloudflare-real-ip.conf /etc/nginx/snippets/dujiao-cloudflare-real-ip.conf
 sudo cp nginx.conf /etc/nginx/sites-available/store.kanoapi.top
 sudo ln -s /etc/nginx/sites-available/store.kanoapi.top /etc/nginx/sites-enabled/store.kanoapi.top
 sudo nginx -t
