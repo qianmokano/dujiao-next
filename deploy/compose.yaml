@@ -5,6 +5,10 @@ services:
     image: redis:7-alpine
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]
+    networks:
+      default:
+        aliases:
+          - dujiao-redis
     volumes:
       - redis-data:/data
     healthcheck:
