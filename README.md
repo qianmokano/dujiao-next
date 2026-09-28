@@ -227,6 +227,10 @@ Or with Docker:
 docker run -d -p 8080:8080 -v $PWD/config.yml:/app/config.yml:ro dujiaonext/dujiao-next:latest
 ```
 
+For a customized fork on a single Ubuntu/Debian VPS, see the
+[Docker Compose + Nginx deployment guide](deploy/README.md). It publishes a versioned
+image from your fork and keeps runtime data outside the container.
+
 ## Quick Start (Develop)
 
 Run the backend and the two frontends separately for hot reload:

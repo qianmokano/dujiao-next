@@ -1,0 +1,48 @@
+# Copy to config.yml on the VPS. Never commit the real file.
+# Generate three different secrets with: openssl rand -hex 32
+app:
+  secret_key: REPLACE_WITH_FIRST_RANDOM_SECRET
+
+server:
+  host: 0.0.0.0
+  port: "8080"
+  mode: release
+  # Docker's gateway for the fixed network in compose.yaml, plus loopback.
+  # If the Compose subnet changes, update the gateway here as well.
+  trusted_proxies:
+    - 172.29.51.1/32
+    - 127.0.0.1/32
+
+database:
+  driver: sqlite
+  dsn: ./db/dujiao.db
+  pool:
+    max_open_conns: 1
+    max_idle_conns: 1
+
+jwt:
+  secret: REPLACE_WITH_SECOND_RANDOM_SECRET
+
+user_jwt:
+  secret: REPLACE_WITH_THIRD_RANDOM_SECRET
+
+bootstrap:
+  default_admin_username: admin
+  # Set a strong password for the first start; remove it after the admin exists.
+  default_admin_password: REPLACE_WITH_STRONG_ADMIN_PASSWORD
+
+redis:
+  enabled: true
+  host: redis
+
+queue:
+  enabled: true
+  host: redis
+
+cors:
+  allowed_origins:
+    - https://store.kanoapi.top
+  allow_credentials: true
+
+web:
+  admin_path: /admin
