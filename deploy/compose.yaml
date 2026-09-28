@@ -1,0 +1,45 @@
+name: dujiao-next
+
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  app:
+    image: ${APP_IMAGE:?Set APP_IMAGE in .env to a published version tag}
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - ./config.yml:/app/config.yml:ro
+      - ./db:/app/db
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.29.51.0/24
+          gateway: 172.29.51.1
+
+volumes:
+  redis-data:
+    name: dujiao-next-redis-data
