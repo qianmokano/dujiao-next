@@ -51,6 +51,21 @@
     "notice": "公告",
     "about": "关于"
   },
+  "atlas": {
+    "hero": {
+      "subtitle": "选择适合你的订阅方案，快速完成购买。",
+      "cta": "查看方案"
+    },
+    "plans": {
+      "title": "订阅方案",
+      "description": "以下为本站目前在售的方案，价格与库存均为实时数据。"
+    },
+    "footer": {
+      "shop": "商店",
+      "support": "支持",
+      "legal": "条款"
+    }
+  },
   "vault": {
     "hero": {
       "badge": "即时发货 · 数字商品",

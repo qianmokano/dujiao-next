@@ -1,0 +1,151 @@
+/* =========================================================================
+   atlas 模板设计令牌（极简 · AI 订阅店）
+   方向: 浅色中性底 + 墨色文字阶梯 + 发丝边框；克制、可信、充足留白。
+   强调色: 不定义自己的强调色——直接继承全局 --ui-accent（站点主题色），
+           全站单一强调色，站长后台改色即全局生效。
+   作用域: 全部选择器限定在 .atlas-scope / body.atlas-tokens 下，不影响
+           classic / vault。暗色跟随全局 .dark（document.documentElement）。
+
+   为什么令牌要额外挂一份到 body.atlas-tokens:
+           Toast / ConfirmDialog / 公告弹窗 / ProductQuickBuy / reka-ui 的
+           SelectContent 等浮层都 Teleport 到 <body>，落在 .atlas-scope 之外。
+           body 上的 class 由 AtlasLayout 挂载时打上、卸载时摘掉。
+           注意：只有「令牌」双挂，背景/flex 布局那几条仍只作用于
+           .atlas-scope，否则会改掉 body 自身的布局。
+   ========================================================================= */
+
+/* ---------- Tokens: 亮色（默认） ---------- */
+.atlas-scope,
+body.atlas-tokens {
+  --font-head: "Rubik", "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --font-body: "Nunito Sans", "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+
+  --bg: #ffffff;
+  --bg-subtle: #f7f7f8;
+  --surface: #ffffff;
+  --ink: #18181b;
+  --ink-2: #4f4f56;
+  --ink-3: #8d8d94;
+  --border: #e8e8eb;
+  --border-strong: #d7d7dc;
+
+  --r-sm: 6px;
+  --r: 10px;
+  --r-lg: 14px;
+
+  /* 近无阴影：仅浮层保留一层柔和投影 */
+  --shadow-overlay: 0 12px 32px -16px rgba(24, 24, 27, 0.18);
+
+  --gap-block: 96px;
+
+  /* ----------------------------------------------------------------------
+     shadcn --ui-* 覆盖 —— 只重写中性色板与形状，--ui-accent* 全部继承全局
+     （站点主题色），保证 atlas 全站单一强调色。
+     ---------------------------------------------------------------------- */
+  --ui-bg-page: var(--bg);
+  --ui-bg-elevated: var(--surface);
+  --ui-bg-soft: var(--bg-subtle);
+  --ui-bg-muted: var(--bg-subtle);
+  --ui-bg-overlay: color-mix(in srgb, var(--surface) 88%, transparent);
+  --ui-bg-overlay-strong: color-mix(in srgb, var(--surface) 96%, transparent);
+  --ui-text-primary: var(--ink);
+  --ui-text-secondary: var(--ink-2);
+  --ui-text-muted: var(--ink-3);
+  --ui-border: var(--border);
+  --ui-border-strong: var(--border-strong);
+  --ui-radius-sm: var(--r-sm);
+  --ui-radius-md: var(--r);
+  --ui-radius-lg: var(--r-lg);
+  --ui-radius-xl: var(--r-lg);
+  --ui-shadow-soft: none;
+  --ui-shadow-card: var(--shadow-overlay);
+}
+
+/* ---------- 外壳自身的排版与布局（不能挂到 body，否则改掉 body 布局） ---------- */
+.atlas-scope {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15.5px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- Tokens: 暗色（跟随全局 .dark；强调色同样继承全局 .dark 值） ---------- */
+.dark .atlas-scope,
+.dark body.atlas-tokens {
+  --bg: #131316;
+  --bg-subtle: #1a1a1e;
+  --surface: #1a1a1e;
+  --ink: #f0f0f2;
+  --ink-2: #b4b4bb;
+  --ink-3: #76767e;
+  --border: #2a2a30;
+  --border-strong: #3a3a42;
+
+  --shadow-overlay: 0 12px 32px -16px rgba(0, 0, 0, 0.6);
+}
+
+/* ----------------------------------------------------------------------
+   vault 组件兼容令牌 —— atlas 页面复用了 vault 的订单/结算/移动购买条等
+   复杂组件（VaultOrderBody / VaultCheckoutSteps / VaultProductMobileBar …），
+   它们引用 vault 调色板 token。这里把这些名字映射到 atlas 语义色
+   （success/warning/accent），亮/暗随上面的 --ui-* 自动翻转。
+   ---------------------------------------------------------------------- */
+.atlas-scope,
+body.atlas-tokens {
+  --red: var(--ui-accent);
+  --red-strong: var(--ui-accent-hover);
+  --red-soft: var(--ui-accent-soft);
+  --gold: var(--ui-warning);
+  --gold-strong: var(--ui-warning);
+  --gold-soft: var(--ui-warning-soft);
+  --teal: var(--ui-success);
+  --teal-strong: var(--ui-success);
+  --teal-soft: var(--ui-success-soft);
+  --plum: var(--ui-info);
+  --plum-soft: var(--ui-info-soft);
+
+  --shadow-sm: none;
+  --shadow: var(--shadow-overlay);
+  --shadow-lg: var(--shadow-overlay);
+}
+
+/* ---------- Base（限定在作用域内） ----------
+   放进 @layer base，确保低于 Tailwind 的 @layer utilities，
+   工具类（text-* / bg-* …）始终可覆盖这些元素 reset。 */
+@layer base {
+  .atlas-scope h1,
+  .atlas-scope h2,
+  .atlas-scope h3,
+  .atlas-scope h4 {
+    font-family: var(--font-head);
+    font-weight: 600;
+    line-height: 1.22;
+    margin: 0;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  .atlas-scope p { margin: 0; }
+  .atlas-scope a { color: inherit; text-decoration: none; }
+  .atlas-scope img,
+  .atlas-scope svg { display: block; max-width: 100%; }
+  .atlas-scope button { font-family: inherit; cursor: pointer; }
+  .atlas-scope ul { margin: 0; }
+  .atlas-scope :focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 2px; }
+  .atlas-scope ::selection { background: var(--ui-accent-soft); color: var(--ink); }
+}
+
+/* ---------- 响应式 / 无障碍 ---------- */
+@media (max-width: 900px) {
+  .atlas-scope { --gap-block: 64px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .atlas-scope *,
+  .atlas-scope *::before,
+  .atlas-scope *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+}
