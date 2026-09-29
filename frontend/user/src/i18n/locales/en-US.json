@@ -51,6 +51,21 @@
     "notice": "Notice",
     "about": "About"
   },
+  "atlas": {
+    "hero": {
+      "subtitle": "Choose a subscription plan and complete your purchase in minutes.",
+      "cta": "View plans"
+    },
+    "plans": {
+      "title": "Subscription plans",
+      "description": "All plans currently on sale, with live pricing and stock."
+    },
+    "footer": {
+      "shop": "Shop",
+      "support": "Support",
+      "legal": "Legal"
+    }
+  },
   "vault": {
     "hero": {
       "badge": "Instant delivery · Digital goods",

@@ -1,7 +1,10 @@
 <template>
   <div id="app" class="min-h-screen bg-background text-foreground flex flex-col">
-    <!-- vault 模板：自带顶栏/页脚的外壳包裹页面（控制台仍走下方分支） -->
-    <VaultLayout v-if="isVault && !isResellerConsole">
+    <!-- 模板外壳（vault / atlas）：自带顶栏/页脚的外壳包裹页面（控制台仍走下方分支） -->
+    <component
+      :is="templateLayout"
+      v-if="templateLayout && !isResellerConsole"
+    >
       <ErrorBoundary>
         <RouterView v-slot="{ Component }">
           <Transition name="page-fade" mode="out-in">
@@ -9,7 +12,7 @@
           </Transition>
         </RouterView>
       </ErrorBoundary>
-    </VaultLayout>
+    </component>
 
     <!-- classic 模板 / 分销控制台（保持原有结构不变） -->
     <template v-else>
@@ -48,15 +51,21 @@ import ErrorBoundary from './components/ErrorBoundary.vue'
 import BackToTop from './components/BackToTop.vue'
 import MobileBottomNav from './components/MobileBottomNav.vue'
 
-// vault 外壳按需加载，classic 用户不会拉取其 chunk/样式
-const VaultLayout = defineAsyncComponent(() => import('./templates/vault/layout/VaultLayout.vue'))
+// 模板外壳按需加载，classic 用户不会拉取其 chunk/样式
+const templateLayouts = {
+    vault: defineAsyncComponent(() => import('./templates/vault/layout/VaultLayout.vue')),
+    atlas: defineAsyncComponent(() => import('./templates/atlas/layout/AtlasLayout.vue')),
+}
 
 // config 由 router.beforeEach 统一加载，无需在此重复调用
 const appStore = useAppStore()
 const route = useRoute()
 const isResellerConsole = computed(() => route.meta.resellerConsole === true)
 // getActiveTemplate 读取 appStore.config（响应式），config 加载后会重新计算
-const isVault = computed(() => getActiveTemplate() === 'vault')
+const templateLayout = computed(() => {
+    const active = getActiveTemplate()
+    return active === 'classic' ? null : (templateLayouts as Record<string, unknown>)[active] ?? null
+})
 </script>
 
 <style>
