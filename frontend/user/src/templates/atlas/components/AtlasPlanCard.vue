@@ -8,7 +8,20 @@
           class="ml-auto inline-flex shrink-0 items-center rounded-md border border-primary/20 bg-primary/5 px-2 py-0.5 text-[11.5px] font-medium leading-4 text-primary"
         >{{ t('atlas.plans.recommended') }}</span>
       </div>
-      <h3 class="mt-1 line-clamp-2 text-[17px] font-semibold leading-snug">{{ title }}</h3>
+      <div class="flex items-center gap-3" :class="coverImage ? 'mt-2' : 'mt-1'">
+        <img
+          v-if="coverImage"
+          :src="coverImage"
+          :alt="title"
+          width="48"
+          height="48"
+          loading="lazy"
+          decoding="async"
+          class="h-12 w-12 shrink-0 rounded-md border bg-[#fff] object-contain p-1"
+          @error="imageErrored = true"
+        />
+        <h3 class="min-w-0 line-clamp-2 text-[17px] font-semibold leading-snug">{{ title }}</h3>
+      </div>
       <p v-if="summary" class="mt-2 line-clamp-2 text-[13.5px] leading-relaxed text-muted-foreground">{{ summary }}</p>
     </div>
 
@@ -44,10 +57,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useLocalized, useProductLabels } from '../../../composables/useProduct'
 import { resolveAtlasPlanTags } from '../../../utils/atlasPlanTags'
+import { getFirstImageUrl } from '../../../utils/image'
 
 const props = defineProps<{ product: any }>()
 
@@ -65,4 +79,11 @@ const promo = computed(() => hasPromotionPrice(props.product))
 const stockLabel = computed(() => getStockStatusLabel(props.product))
 const planTags = computed(() => resolveAtlasPlanTags(props.product?.tags))
 const tags = computed(() => planTags.value.tags)
+const primaryImage = computed(() => getFirstImageUrl(props.product?.images))
+const imageErrored = ref(false)
+const coverImage = computed(() => imageErrored.value ? '' : primaryImage.value)
+
+watch(primaryImage, () => {
+  imageErrored.value = false
+})
 </script>
