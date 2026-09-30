@@ -1,7 +1,7 @@
 <template>
   <div class="atlas-scope">
     <!-- 顶栏 -->
-    <header class="sticky top-0 z-50 border-b bg-[color:var(--bg)]">
+    <header class="atlas-topbar sticky top-0 z-50 border-b">
       <div class="mx-auto flex h-[60px] w-full max-w-[1120px] items-center gap-4 px-5 sm:gap-6 sm:px-6">
         <RouterLink class="inline-flex min-w-0 items-center gap-2 text-[16.5px] font-semibold tracking-[-0.01em] text-foreground" to="/" :title="brandName">
           <img v-if="brandLogo" :src="brandLogo" :alt="brandName" class="h-7 max-w-[110px] object-contain sm:max-w-[150px]" />
