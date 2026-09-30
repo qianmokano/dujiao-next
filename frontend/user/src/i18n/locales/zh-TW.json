@@ -54,7 +54,13 @@
   "atlas": {
     "hero": {
       "subtitle": "選擇適合你的訂閱方案，快速完成購買。",
-      "cta": "查看方案"
+      "cta": "查看方案",
+      "subscribe": "立即訂閱",
+      "bannerLabel": "精選訂閱",
+      "carousel": "輪播",
+      "slides": "選擇橫幅",
+      "pause": "暫停輪播",
+      "resume": "繼續輪播"
     },
     "plans": {
       "title": "訂閱方案",
