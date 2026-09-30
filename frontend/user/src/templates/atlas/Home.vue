@@ -87,31 +87,7 @@
 
     <!-- ==================== 默认：订阅方案首页 ==================== -->
     <template v-else>
-      <!-- Hero：纯文字，左对齐，无轮播 -->
-      <section class="border-b">
-        <div class="mx-auto w-full max-w-[1120px] px-5 pb-16 pt-28 sm:px-6 sm:pb-20 sm:pt-36">
-          <div v-if="heroLoading" class="space-y-4">
-            <div class="h-9 w-2/3 max-w-[420px] rounded-md bg-secondary"></div>
-            <div class="h-4 w-1/2 max-w-[340px] rounded bg-secondary"></div>
-            <div class="mt-6 h-11 w-32 rounded-md bg-secondary"></div>
-          </div>
-          <template v-else>
-            <h1 class="max-w-[18ch] text-[32px] font-semibold leading-[1.18] tracking-[-0.015em] sm:text-[40px]">{{ heroTitle }}</h1>
-            <p v-if="heroSubtitle" class="mt-4 max-w-[52ch] text-[15px] leading-relaxed text-muted-foreground sm:text-[16px]">{{ heroSubtitle }}</p>
-            <div class="mt-8 flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                class="inline-flex h-11 items-center justify-center rounded-md bg-primary px-5 text-[14.5px] font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-                @click="onHeroCta"
-              >{{ heroCtaText }}</button>
-              <RouterLink
-                to="/products"
-                class="inline-flex h-11 items-center justify-center rounded-md px-4 text-[14.5px] text-muted-foreground transition-colors hover:text-foreground"
-              >{{ t('home.featured.viewAll') }}</RouterLink>
-            </div>
-          </template>
-        </div>
-      </section>
+      <AtlasBannerHero />
 
       <!-- 订阅方案 -->
       <section id="plans" class="mx-auto w-full max-w-[1120px] scroll-mt-20 px-5 py-16 sm:px-6 sm:py-20">
@@ -196,7 +172,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ChevronLeft, ChevronRight, PackageOpen, Search, SearchX, X } from 'lucide-vue-next'
-import { bannerAPI, postAPI, productAPI } from '../../api'
+import { postAPI, productAPI } from '../../api'
 import { useLocalized } from '../../composables/useProduct'
 import { useProductList } from '../../composables/useProductList'
 import { useProductListGroups } from '../../composables/useProductListGroups'
@@ -205,6 +181,7 @@ import { useAppStore } from '../../stores/app'
 import AtlasPlanCard from './components/AtlasPlanCard.vue'
 import AtlasProductListItem from './components/AtlasProductListItem.vue'
 import AtlasCategorySidebar from './components/AtlasCategorySidebar.vue'
+import AtlasBannerHero from './components/AtlasBannerHero.vue'
 import ProductQuickBuy from '../../components/ProductQuickBuy.vue'
 import AnnouncementModal from '../../components/AnnouncementModal.vue'
 import { useAnnouncement, type HomeAnnouncement } from '../../composables/useAnnouncement'
@@ -219,49 +196,6 @@ const navBuiltin = computed(() => (appStore.config?.nav_config as { builtin?: Re
 const blogEnabled = computed(() => navBuiltin.value?.blog !== false)
 const noticeEnabled = computed(() => navBuiltin.value?.notice !== false)
 const latestSectionVisible = computed(() => blogEnabled.value || noticeEnabled.value)
-
-// ==================== Hero（取站长配置的第一张横幅；无配置时用站点名） ====================
-const heroLoading = ref(true)
-const heroBanner = ref<any>(null)
-
-const brandName = computed(() => String(appStore.config?.brand?.site_name || '').trim() || 'Dujiao')
-const heroTitle = computed(() => getLocalizedText(heroBanner.value?.title) || brandName.value)
-const heroSubtitle = computed(() => getLocalizedText(heroBanner.value?.subtitle) || t('atlas.hero.subtitle'))
-const heroLink = computed(() => {
-  const banner = heroBanner.value
-  if (!banner || banner.link_type === 'none') return ''
-  return String(banner.link_value || '')
-})
-const heroCtaText = computed(() => {
-  if (!heroLink.value) return t('atlas.hero.cta')
-  const linkType = String(heroBanner.value?.link_type || '').toLowerCase()
-  return linkType === 'external' ? t('common.learnMore') : t('common.viewDetails')
-})
-
-const onHeroCta = () => {
-  if (!heroLink.value) {
-    document.getElementById('plans')?.scrollIntoView({ behavior: 'smooth' })
-    return
-  }
-  const isExternal = /^https?:\/\//i.test(heroLink.value)
-  if (isExternal || heroBanner.value?.open_in_new_tab) {
-    window.open(heroLink.value, heroBanner.value?.open_in_new_tab ? '_blank' : '_self')
-    return
-  }
-  router.push(heroLink.value)
-}
-
-const loadHeroBanner = async () => {
-  heroLoading.value = true
-  try {
-    const response = await bannerAPI.list({ position: 'home_hero', limit: 1 })
-    heroBanner.value = (response.data.data || [])[0] || null
-  } catch {
-    heroBanner.value = null
-  } finally {
-    heroLoading.value = false
-  }
-}
 
 // ==================== 订阅方案 ====================
 const products = ref<any[]>([])
@@ -382,7 +316,7 @@ onMounted(async () => {
   if (isListMode.value) {
     await listInitialize()
   } else {
-    await Promise.all([loadHeroBanner(), loadPlans(), loadLatestPosts()])
+    await Promise.all([loadPlans(), loadLatestPosts()])
   }
   showAnnouncementIfNeeded()
 })

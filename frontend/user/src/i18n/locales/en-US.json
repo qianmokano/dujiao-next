@@ -54,7 +54,13 @@
   "atlas": {
     "hero": {
       "subtitle": "Choose a subscription plan and complete your purchase in minutes.",
-      "cta": "View plans"
+      "cta": "View plans",
+      "subscribe": "Subscribe now",
+      "bannerLabel": "Featured subscriptions",
+      "carousel": "Carousel",
+      "slides": "Choose a banner",
+      "pause": "Pause carousel",
+      "resume": "Resume carousel"
     },
     "plans": {
       "title": "Subscription plans",
