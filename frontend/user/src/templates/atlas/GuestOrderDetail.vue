@@ -17,7 +17,7 @@
           <Input v-model="auth.email" type="email" class="h-11" :placeholder="t('guestOrders.emailPlaceholder')" />
           <Input v-model="auth.order_password" type="password" class="h-11" :placeholder="t('guestOrders.passwordPlaceholder')" />
         </div>
-        <div v-if="authError" class="mt-3.5 rounded-md bg-destructive/10 px-3 py-2.5 text-[13px] text-destructive">{{ authError }}</div>
+        <PageFeedback v-if="authError" class="mt-3.5" level="error" :message="authError" />
         <div class="mt-4 flex flex-wrap gap-2.5">
           <button type="button" class="inline-flex h-10 items-center rounded-md bg-primary px-4 text-[13.5px] font-medium text-primary-foreground transition-colors hover:bg-primary/90" @click="handleAuthSubmit">{{ t('guestOrderDetail.authSubmit') }}</button>
           <button type="button" class="inline-flex h-10 items-center rounded-md px-4 text-[13.5px] text-muted-foreground transition-colors hover:text-foreground" @click="clearAuth">{{ t('guestOrderDetail.authClear') }}</button>
@@ -77,6 +77,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import VaultOrderBody from '../vault/components/VaultOrderBody.vue'
 import { useGuestOrderDetail } from '../../composables/useGuestOrderDetail'
+import PageFeedback from '../../components/PageFeedback.vue'
 
 const { t } = useI18n()
 

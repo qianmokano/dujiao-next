@@ -92,7 +92,7 @@
                 </div>
                 <div v-if="cryptoWalletAddress" class="flex items-center justify-end gap-2 pt-1.5">
                   <button type="button" class="rounded-md border px-3 py-1.5 text-[12.5px] text-foreground transition-colors hover:border-hairline-strong" @click="handleCopyWalletAddress">{{ t('payment.copyWalletAddress') }}</button>
-                  <span v-if="walletAddressCopied" class="text-[12.5px] text-success">{{ t('payment.copied') }}</span>
+                  <span v-if="walletAddressCopied" role="status" class="inline-flex items-center gap-1 text-[12.5px] text-foreground"><Check class="h-4 w-4 text-success" aria-hidden="true" />{{ t('payment.copied') }}</span>
                 </div>
               </div>
               <div class="mt-4 flex flex-wrap gap-2.5 border-t pt-4">
@@ -118,7 +118,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { AlertCircle, CheckCircle2 } from 'lucide-vue-next'
+import { AlertCircle, Check, CheckCircle2 } from 'lucide-vue-next'
 import { Badge } from '@/components/ui/badge'
 import { useRechargeOrderDetail } from '../../composables/useRechargeOrderDetail'
 

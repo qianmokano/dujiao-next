@@ -27,7 +27,7 @@
         </button>
       </div>
       <p class="mt-3 text-[13px] text-muted-foreground">{{ t('guestOrders.tip') }}</p>
-      <div v-if="error" class="mt-3.5 rounded-md bg-destructive/10 px-3 py-2.5 text-[13px] text-destructive">{{ error }}</div>
+      <PageFeedback v-if="error" class="mt-3.5" level="error" :message="error" />
     </section>
 
     <!-- 空态 -->
@@ -83,6 +83,7 @@ import { ChevronLeft, ChevronRight, ClipboardList, Search } from 'lucide-vue-nex
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { useGuestOrders } from '../../composables/useGuestOrders'
+import PageFeedback from '../../components/PageFeedback.vue'
 
 const { t } = useI18n()
 

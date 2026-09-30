@@ -12,10 +12,10 @@
       <p class="mt-1.5 text-[14px] text-muted-foreground">{{ t('auth.forgot.subtitle') }}</p>
 
       <div v-if="!emailVerificationEnabled" class="mt-6">
-        <div class="rounded-md bg-destructive/10 px-3.5 py-3 text-center text-[13.5px] text-destructive">
+        <PageFeedback level="error">
           <p class="font-medium">{{ t('auth.forgot.disabled') }}</p>
           <RouterLink to="/auth/login" class="mt-2.5 inline-block text-[13px] text-muted-foreground underline underline-offset-2 transition-colors hover:text-foreground">{{ t('auth.forgot.backLogin') }}</RouterLink>
-        </div>
+        </PageFeedback>
       </div>
 
       <form v-else class="mt-6 grid gap-4" @submit.prevent="handleReset">
@@ -60,7 +60,7 @@
           <Input v-model="newPassword" type="password" required class="h-11" :placeholder="t('auth.forgot.newPasswordPlaceholder')" />
         </div>
 
-        <div v-if="error" class="rounded-md bg-destructive/10 px-3.5 py-2.5 text-[13px] text-destructive">{{ error }}</div>
+        <PageFeedback v-if="error" level="error" :message="error" />
 
         <button type="submit" class="h-11 w-full rounded-md bg-primary text-[14.5px] font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50" :disabled="userAuthStore.loading">
           {{ userAuthStore.loading ? t('auth.forgot.submitting') : t('auth.forgot.submit') }}
@@ -81,6 +81,7 @@ import ImageCaptcha from '../../../components/captcha/ImageCaptcha.vue'
 import TurnstileCaptcha from '../../../components/captcha/TurnstileCaptcha.vue'
 import { Input } from '@/components/ui/input'
 import { useForgot } from '../../../composables/useForgot'
+import PageFeedback from '../../../components/PageFeedback.vue'
 
 const { t } = useI18n()
 

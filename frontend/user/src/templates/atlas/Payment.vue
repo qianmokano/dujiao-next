@@ -26,7 +26,7 @@
         <Input v-model="guestAuth.email" type="email" class="h-11" :placeholder="t('guestOrders.emailPlaceholder')" />
         <Input v-model="guestAuth.order_password" type="password" class="h-11" :placeholder="t('guestOrders.passwordPlaceholder')" />
       </div>
-      <div v-if="guestAuthError" class="mt-3.5 rounded-md bg-destructive/10 px-3 py-2.5 text-[13px] text-destructive">{{ guestAuthError }}</div>
+      <PageFeedback v-if="guestAuthError" class="mt-3.5" level="error" :message="guestAuthError" />
       <button type="button" class="mt-4 inline-flex items-center rounded-md bg-primary px-4 py-2 text-[13.5px] font-medium text-primary-foreground transition-colors hover:bg-primary/90" @click="handleGuestAuthSubmit">{{ t('payment.guestAuthSubmit') }}</button>
     </div>
 
@@ -65,7 +65,7 @@
               </div>
               <div v-if="cryptoWalletAddress" class="flex items-center justify-end gap-2 pt-1.5">
                 <button type="button" class="rounded-md border px-3 py-1.5 text-[12.5px] text-foreground transition-colors hover:border-hairline-strong" @click="handleCopyWalletAddress">{{ t('payment.copyWalletAddress') }}</button>
-                <span v-if="walletAddressCopied" class="text-[12.5px] text-success">{{ t('payment.copied') }}</span>
+                <span v-if="walletAddressCopied" role="status" class="inline-flex items-center gap-1 text-[12.5px] text-foreground"><Check class="h-4 w-4 text-success" aria-hidden="true" />{{ t('payment.copied') }}</span>
               </div>
             </div>
           </div>
@@ -74,11 +74,11 @@
           <div v-else class="rounded-[10px] border bg-secondary/50 p-6">
             <div class="mb-2.5 text-[13px] text-muted-foreground">{{ t('payment.openPayLink') }}</div>
             <button type="button" class="inline-flex items-center rounded-md bg-primary px-4 py-2 text-[13.5px] font-medium text-primary-foreground transition-colors hover:bg-primary/90" @click="handleOpenPayLink">{{ t('payment.openPayLink') }}</button>
-            <div v-if="openedPayWindow" class="mt-2.5 text-[12.5px] text-success">{{ payLinkOpenedTip }}</div>
+            <PageFeedback v-if="openedPayWindow" class="mt-2.5" level="info" :message="payLinkOpenedTip" />
             <div v-if="showTelegramPayHint" class="mt-2.5 text-[12.5px] text-muted-foreground">{{ t('payment.telegramExternalHint') }}</div>
             <div class="mt-2.5 flex items-center gap-2">
               <button type="button" class="rounded-md border px-3 py-1.5 text-[12.5px] text-foreground transition-colors hover:border-hairline-strong" @click="handleCopyPayLink">{{ t('payment.copyPayLink') }}</button>
-              <span v-if="copied" class="text-[12.5px] text-success">{{ t('payment.copied') }}</span>
+              <span v-if="copied" role="status" class="inline-flex items-center gap-1 text-[12.5px] text-foreground"><Check class="h-4 w-4 text-success" aria-hidden="true" />{{ t('payment.copied') }}</span>
             </div>
           </div>
         </div>
@@ -196,14 +196,15 @@
               <div v-if="useBalance" class="mt-2.5 grid gap-0.5 text-[12.5px] text-muted-foreground">
                 <div>{{ t('payment.walletDeductLabel') }}：{{ expectedWalletPaidDisplay }}</div>
                 <div v-if="!walletOnlyPayment">{{ t('payment.onlinePayLabel') }}：{{ expectedOnlinePayDisplay }}</div>
-                <div v-if="walletOnlyPayment && expectedOnlinePayCents > 0" class="text-warning">{{ t('payment.walletInsufficientHint') }}</div>
               </div>
             </div>
-            <div v-if="cachedPayment" class="mb-3 grid gap-1.5 rounded-md border border-warning/40 bg-warning/10 p-3 text-[13px] text-warning">
-              <div class="font-medium">{{ t('payment.cachedTitle') }}</div>
-              <div>{{ t('payment.cachedHint', { channel: cachedChannelName }) }}</div>
-              <div class="mt-1.5"><button type="button" class="rounded-md border bg-card px-3 py-1.5 text-[12.5px] text-foreground transition-colors hover:border-hairline-strong" @click="restoreCachedPayment">{{ t('payment.useCached') }}</button></div>
-            </div>
+            <PageFeedback v-if="cachedPayment" class="mb-3" level="warning">
+              <div class="grid gap-1.5">
+                <div class="font-medium">{{ t('payment.cachedTitle') }}</div>
+                <div>{{ t('payment.cachedHint', { channel: cachedChannelName }) }}</div>
+                <div class="mt-1.5"><button type="button" class="rounded-md border bg-card px-3 py-1.5 text-[12.5px] text-foreground transition-colors hover:border-hairline-strong" @click="restoreCachedPayment">{{ t('payment.useCached') }}</button></div>
+              </div>
+            </PageFeedback>
             <PaymentChannelSelector
               v-if="!walletOnlyPayment"
               :channels="channels"
@@ -227,6 +228,7 @@
           <div v-if="showPayLink" class="mt-3.5 flex flex-wrap gap-2">
             <button type="button" class="rounded-md bg-primary px-3.5 py-1.5 text-[13px] font-medium text-primary-foreground transition-colors hover:bg-primary/90" @click="handleOpenPayLink">{{ t('payment.openPayLink') }}</button>
             <button type="button" class="rounded-md border px-3.5 py-1.5 text-[13px] text-foreground transition-colors hover:border-hairline-strong" @click="handleCopyPayLink">{{ t('payment.copyPayLink') }}</button>
+            <span v-if="copied" role="status" class="inline-flex items-center gap-1 text-[12.5px] text-foreground"><Check class="h-4 w-4 text-success" aria-hidden="true" />{{ t('payment.copied') }}</span>
           </div>
         </section>
       </div>
@@ -235,12 +237,12 @@
       <aside class="sticky top-[84px] rounded-[10px] border bg-card p-6">
         <h2 class="mb-4 text-[16px] font-semibold">{{ t('payment.actionTitle') }}</h2>
         <div v-if="showCountdown" class="mb-3 text-[12.5px] text-muted-foreground">{{ t('payment.countdownLabel') }}：<span class="tabular-nums">{{ countdownText }}</span></div>
-        <div v-if="paymentAlert" class="mb-3 rounded-md px-3 py-2.5 text-[13px]" :class="paymentAlert.level === 'error' ? 'bg-destructive/10 text-destructive' : (paymentAlert.level === 'success' ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning')">{{ paymentAlert.message }}</div>
+        <PageFeedback v-if="paymentAlert" class="mb-3" :level="paymentAlert.level === 'success' ? 'info' : paymentAlert.level" :message="paymentAlert.message" />
 
         <div v-if="selectedChannel" class="mb-3 rounded-md bg-secondary px-3 py-2.5 text-[12.5px] text-muted-foreground">{{ t('payment.methodLabel') }}：{{ selectedChannelName }}</div>
         <div v-else-if="!requiresOnlineChannel && !orderExpired && !orderCanceled" class="mb-3 rounded-md bg-secondary px-3 py-2.5 text-[12.5px] text-muted-foreground">{{ t('payment.walletPayOnly') }}</div>
-        <div v-else-if="walletOnlyPayment && expectedOnlinePayCents > 0 && !orderExpired && !orderCanceled" class="mb-3 rounded-md bg-warning/10 px-3 py-2.5 text-[12.5px] text-warning">{{ t('payment.walletInsufficientHint') }}</div>
-        <div v-else-if="!walletOnlyPayment && requiresOnlineChannel && !orderExpired && !orderCanceled" class="mb-3 rounded-md bg-warning/10 px-3 py-2.5 text-[12.5px] text-warning">{{ t('payment.selectChannelError') }}</div>
+        <PageFeedback v-else-if="walletOnlyPayment && expectedOnlinePayCents > 0 && !orderExpired && !orderCanceled" class="mb-3" level="warning" :message="t('payment.walletInsufficientHint')" />
+        <PageFeedback v-else-if="!walletOnlyPayment && requiresOnlineChannel && !orderExpired && !orderCanceled" class="mb-3" level="warning" :message="t('payment.selectChannelError')" />
 
         <button type="button" class="h-11 w-full rounded-md bg-primary text-[14.5px] font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40" :disabled="!canSubmitPayment" @click="handlePayment">
           {{ submitting ? t('payment.submitting') : t('payment.submitButton') }}
@@ -253,12 +255,13 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { AlertCircle } from 'lucide-vue-next'
+import { AlertCircle, Check } from 'lucide-vue-next'
 import { Input } from '@/components/ui/input'
 import PaymentAmountBreakdown from '../../components/payment/PaymentAmountBreakdown.vue'
 import PaymentChannelSelector from '../../components/payment/PaymentChannelSelector.vue'
 import VaultCheckoutSteps from '../vault/components/VaultCheckoutSteps.vue'
 import { usePayment } from '../../composables/usePayment'
+import PageFeedback from '../../components/PageFeedback.vue'
 
 const { t } = useI18n()
 

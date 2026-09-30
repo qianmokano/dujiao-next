@@ -40,9 +40,7 @@
 
       <!-- 内容 -->
       <section class="grid min-w-0 gap-5">
-        <div v-if="globalAlert" class="rounded-md px-3.5 py-3 text-[13px]" :class="globalAlert.level === 'error' ? 'bg-destructive/10 text-destructive' : (globalAlert.level === 'success' ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning')">
-          {{ globalAlert.message }}
-        </div>
+        <PageFeedback v-if="globalAlert" :level="globalAlert.level" :message="globalAlert.message" />
 
         <!-- 概览 -->
         <template v-if="currentSection === 'overview'">
@@ -185,6 +183,7 @@ import GiftCardPanel from '../../views/personal/GiftCardPanel.vue'
 import AffiliatePanel from '../../views/personal/AffiliatePanel.vue'
 import ApiPanel from '../../views/personal/ApiPanel.vue'
 import { usePersonalCenter, type PersonalSection } from '../../composables/usePersonalCenter'
+import PageFeedback from '../../components/PageFeedback.vue'
 
 const { t } = useI18n()
 

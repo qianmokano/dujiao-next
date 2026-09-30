@@ -17,13 +17,14 @@
         <Button
           v-if="fulfillment.status === 'delivered' && !isFulfillmentTruncated(fulfillment)"
           type="button"
-          :variant="fulfillmentCopied ? 'default' : 'outline'"
+          :variant="!isAtlas && fulfillmentCopied ? 'default' : 'outline'"
           size="sm"
           class="rounded-full"
-          :class="fulfillmentCopied ? 'bg-[color:var(--teal-strong)] text-white hover:bg-[color:var(--teal-strong)]/90' : ''"
+          :class="!isAtlas && fulfillmentCopied ? 'bg-[color:var(--teal-strong)] text-white hover:bg-[color:var(--teal-strong)]/90' : ''"
           @click="handleCopyFulfillment(fulfillment)"
         >
-          <component :is="fulfillmentCopied ? Check : Copy" /> {{ fulfillmentCopied ? t('orderDetail.fulfillmentCopied') : t('orderDetail.fulfillmentCopy') }}
+          <component :is="fulfillmentCopied ? Check : Copy" :class="isAtlas && fulfillmentCopied ? 'text-success' : ''" aria-hidden="true" />
+          <span :aria-live="isAtlas ? 'polite' : undefined">{{ fulfillmentCopied ? t('orderDetail.fulfillmentCopied') : t('orderDetail.fulfillmentCopy') }}</span>
         </Button>
       </div>
     </div>
@@ -33,7 +34,8 @@
 
     <template v-if="isFulfillmentTruncated(fulfillment)">
       <div class="text-xs text-muted-foreground">{{ t('orderDetail.fulfillmentTotalLines', { count: fulfillment.payload_line_count }) }}</div>
-      <div class="rounded-sm bg-warning/10 px-2.5 py-2 text-xs font-semibold text-warning">{{ t('orderDetail.fulfillmentTruncatedHint') }}</div>
+      <PageFeedback v-if="isAtlas" level="warning" :message="t('orderDetail.fulfillmentTruncatedHint')" />
+      <div v-else class="rounded-sm bg-warning/10 px-2.5 py-2 text-xs font-semibold text-warning">{{ t('orderDetail.fulfillmentTruncatedHint') }}</div>
       <pre class="mt-1 max-h-[260px] overflow-y-auto whitespace-pre-wrap break-all rounded-sm border bg-secondary p-3 font-mono text-[12.5px] text-muted-foreground">{{ fulfillment.payload }}</pre>
     </template>
     <div v-else-if="fulfillmentDeliveryLines(fulfillment).length" class="mt-1 grid gap-0.5 rounded-sm border bg-secondary p-3 font-mono text-[12.5px] text-muted-foreground">
@@ -56,6 +58,8 @@ import { useI18n } from 'vue-i18n'
 import { Copy, Check, Download, Info } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { useOrderDisplayHelpers } from '../../../composables/useOrderDisplayHelpers'
+import { useFeedback } from '../../../composables/useFeedback'
+import PageFeedback from '../../../components/PageFeedback.vue'
 
 defineProps<{
   title?: string
@@ -70,6 +74,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const { isAtlas } = useFeedback()
 
 const {
   isFulfillmentTruncated, fulfillmentDeliveryLines, instructionBlocks,

@@ -6,9 +6,7 @@
       </template>
     </PanelHeading>
 
-    <Alert v-if="alert" class="mb-5" :variant="pageAlertVariant(alert.level)" :class="pageAlertToneClass(alert.level)">
-      <AlertDescription>{{ alert.message }}</AlertDescription>
-    </Alert>
+    <PageFeedback v-if="alert" class="mb-5" :level="alert.level" :message="alert.message" />
 
     <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
       <StatCard :label="t('personalCenter.wallet.balanceLabel')" :value="balanceDisplay" :icon="Banknote" tone="accent" mono />
@@ -26,10 +24,10 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { Wallet, Banknote, ReceiptText, Layers } from 'lucide-vue-next'
-import { pageAlertVariant, pageAlertToneClass, type PageAlert } from '../../utils/alerts'
+import type { PageAlert } from '../../utils/alerts'
 import PanelHeading from '../shared/PanelHeading.vue'
 import StatCard from '../shared/StatCard.vue'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import PageFeedback from '../PageFeedback.vue'
 import { Badge } from '@/components/ui/badge'
 
 defineProps<{

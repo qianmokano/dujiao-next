@@ -14,6 +14,7 @@ import { buildSkuDisplayText, normalizeSkuId } from '../utils/sku'
 import { resolveSkuAvailableStock, resolveSkuStockDisplay, type PublicStockDisplay } from '../utils/publicStock'
 import { useLocalized, useProductLabels } from './useProduct'
 import { toast } from './useToast'
+import { useFeedback } from './useFeedback'
 
 /**
  * 商品详情页的全部业务逻辑（数据加载、SKU/数量、促销/会员/批发定价、库存约束、
@@ -27,6 +28,7 @@ export function useProductDetail(options: { onLoaded?: () => void } = {}) {
   const route = useRoute()
   const router = useRouter()
   const { t } = useI18n()
+  const { success: notifySuccess } = useFeedback()
   const appStore = useAppStore()
   const cartStore = useCartStore()
   const buyNowStore = useBuyNowStore()
@@ -443,7 +445,7 @@ export function useProductDetail(options: { onLoaded?: () => void } = {}) {
       return
     }
     cartStore.addItem(buildItemPayload(sku), quantity.value)
-    toast.success(t('toast.addedToCart'))
+    notifySuccess(t('toast.addedToCart'), () => { toast.success(t('toast.addedToCart')) })
   }
 
   const buyNow = () => {

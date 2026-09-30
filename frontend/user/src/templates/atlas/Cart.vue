@@ -64,7 +64,7 @@
               </div>
             </div>
 
-            <div v-if="quantityWarning(item)" class="mt-3 rounded-md bg-warning/10 px-3 py-2 text-[13px] text-warning">{{ quantityWarning(item) }}</div>
+            <PageFeedback v-if="quantityWarning(item)" class="mt-3" level="warning" :message="quantityWarning(item)" />
           </div>
         </article>
       </div>
@@ -95,6 +95,7 @@ import { useI18n } from 'vue-i18n'
 import { ChevronRight, Minus, Package, Plus, ShoppingCart, Trash2 } from 'lucide-vue-next'
 import VaultCheckoutSteps from '../vault/components/VaultCheckoutSteps.vue'
 import { useCart } from '../../composables/useCart'
+import PageFeedback from '../../components/PageFeedback.vue'
 
 const { t } = useI18n()
 

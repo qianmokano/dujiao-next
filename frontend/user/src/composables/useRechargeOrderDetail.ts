@@ -7,6 +7,7 @@ import { useTelegramMiniAppStore } from '../stores/telegramMiniApp'
 import { copyText } from '../utils/clipboard'
 import { isCustomerSurchargePayment, resolvePaymentLinkNavigationTarget, resolvePaymentPresentationMode, shouldAutoOpenPaymentLink } from '../utils/paymentResumePolicy'
 import type { BadgeTone } from '../utils/status'
+import { useCopyFeedback } from './useCopyFeedback'
 
 /**
  * 充值订单详情逻辑（classic + vault 共用，含二维码渲染与轮询）。
@@ -22,6 +23,7 @@ export function useRechargeOrderDetail() {
   const payment = ref<any>(null)
   const pollTimer = ref<number | null>(null)
   const walletAddressCopied = ref(false)
+  const { copy: copyWalletAddressFeedback } = useCopyFeedback(() => t('payment.copyFailed'), walletAddressCopied)
   const walletAddressCopiedTimer = ref<number | null>(null)
   const qrImageUrl = ref('')
   const qrRenderVersion = ref(0)
@@ -235,6 +237,7 @@ export function useRechargeOrderDetail() {
 
   const handleCopyWalletAddress = async () => {
     if (!cryptoWalletAddress.value) return
+    if (await copyWalletAddressFeedback(cryptoWalletAddress.value)) return
     try {
       await copyText(cryptoWalletAddress.value)
       walletAddressCopied.value = true

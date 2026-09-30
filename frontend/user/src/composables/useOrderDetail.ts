@@ -5,6 +5,7 @@ import { userOrderAPI } from '../api'
 import { debounceAsync } from '../utils/debounce'
 import { useConfirmDialog } from './useConfirmDialog'
 import { toast } from './useToast'
+import { useFeedback } from './useFeedback'
 import { useOrderDisplayHelpers } from './useOrderDisplayHelpers'
 
 /**
@@ -15,6 +16,7 @@ export function useOrderDetail() {
   const router = useRouter()
   const { confirm: showConfirm } = useConfirmDialog()
   const { t } = useI18n()
+  const { transientError: notifyTransientError } = useFeedback()
 
   const loading = ref(true)
   const order = ref<any>(null)
@@ -67,7 +69,7 @@ export function useOrderDetail() {
       await userOrderAPI.cancel(order.value.order_no)
       await debouncedLoadOrder()
     } catch {
-      toast.error(t('orderDetail.cancelFailed'))
+      notifyTransientError(t('orderDetail.cancelFailed'), () => { toast.error(t('orderDetail.cancelFailed')) })
     }
   }
 
