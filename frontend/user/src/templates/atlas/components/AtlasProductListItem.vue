@@ -9,7 +9,7 @@
       :src="coverImage"
       :alt="title"
       loading="lazy"
-      class="h-11 w-11 flex-none rounded-md border object-cover"
+      class="h-11 w-11 flex-none rounded-md object-cover"
       @error="imageErrored = true"
     />
 

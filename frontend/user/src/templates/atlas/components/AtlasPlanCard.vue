@@ -17,7 +17,7 @@
           height="48"
           loading="lazy"
           decoding="async"
-          class="h-12 w-12 shrink-0 rounded-md border bg-[#fff] object-contain p-1"
+          class="h-12 w-12 shrink-0 rounded-md bg-[#fff] object-contain p-1"
           @error="imageErrored = true"
         />
         <h3 class="min-w-0 line-clamp-2 text-[17px] font-semibold leading-snug">{{ title }}</h3>
