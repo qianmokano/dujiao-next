@@ -9,7 +9,7 @@
     @focusin="carousel.setPaused('focus', true)"
     @focusout="onFocusOut"
   >
-    <div class="atlas-banner-stage relative overflow-hidden" :aria-busy="loading">
+    <div class="atlas-banner-stage relative overflow-hidden rounded-[10px]" :aria-busy="loading">
       <div v-if="loading" class="atlas-banner-slide flex flex-col justify-center bg-secondary/40">
         <div class="h-9 w-2/3 max-w-[420px] rounded-md bg-secondary"></div>
         <div class="mt-4 h-4 w-1/2 max-w-[340px] rounded bg-secondary"></div>

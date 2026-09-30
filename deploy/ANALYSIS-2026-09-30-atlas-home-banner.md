@@ -30,3 +30,9 @@
 ## 下一步
 
 实现提交 `ac21e762` 已推送至 `kano/atlas-home-banner`，后续验收记录提交也在同一分支。[PR #7](https://github.com/qianmokano/dujiao-next/pull/7) 已创建，CI 运行中；CI 结果以 PR 的检查区为准。此轮交付代码和背景素材，生产发布等待明确指令；上线时只切换横幅图片 URL，保留后台文案和商品链接，具体路径见素材 README。
+
+## 圆角补充
+
+用户反馈首页 Banner 图片缺少圆角。核对 AtlasPlanCard 的 10px 卡片圆角、AtlasProductListItem 的图片圆角和 VaultBannerHero 的容器裁切模式后，在 Atlas Banner 舞台容器添加 10px 圆角；现有 overflow-hidden 会同时裁切图片及轮播过渡中的两张横幅。继续沿用当前 PR，未碰原有未提交文件。
+
+本次只改视觉样式，不新增重复实现的测试。现有组件 10 项测试与 80% 覆盖率门槛通过，类型检查和生产构建通过，diff 检查通过。浏览器确认四角均为 10px 且 overflow 为 hidden；桌面截图裁切正常，390px 手机仍没有背景图片元素或请求。最新 CI 结果以 PR 检查区为准。
