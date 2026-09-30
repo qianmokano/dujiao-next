@@ -140,6 +140,20 @@ body.atlas-tokens {
   .atlas-scope ::selection { background: var(--ui-accent-soft); color: var(--ink); }
 }
 
+/* ---------- 顶栏毛玻璃 ----------
+   sticky 顶栏在内容滚过时呈现半透明 + 背景模糊;不支持 backdrop-filter
+   的浏览器回退为不透明 --bg,可读性不受影响。颜色基于令牌,亮/暗自动翻转。 */
+.atlas-scope .atlas-topbar {
+  background: var(--bg);
+}
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .atlas-scope .atlas-topbar {
+    background: color-mix(in srgb, var(--bg) 84%, transparent);
+    -webkit-backdrop-filter: blur(14px) saturate(1.1);
+    backdrop-filter: blur(14px) saturate(1.1);
+  }
+}
+
 /* ---------- 响应式 / 无障碍 ---------- */
 @media (max-width: 900px) {
   .atlas-scope { --gap-block: 64px; }
