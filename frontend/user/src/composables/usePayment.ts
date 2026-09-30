@@ -24,6 +24,7 @@ import {
 import QRCode from 'qrcode'
 import { type PageAlert } from '../utils/alerts'
 import { loadGuestOrderAuth, saveGuestOrderAuth } from '../utils/guestOrderAuth'
+import { useCopyFeedback } from './useCopyFeedback'
 
 /**
  * 支付页共享逻辑（classic + vault 双模板共用）。
@@ -44,6 +45,8 @@ export function usePayment() {
   const selectedChannelId = ref<number | null>(null)
   const copied = ref(false)
   const walletAddressCopied = ref(false)
+  const { copy: copyPayLinkFeedback } = useCopyFeedback(() => t('payment.copyFailed'), copied)
+  const { copy: copyWalletAddressFeedback } = useCopyFeedback(() => t('payment.copyFailed'), walletAddressCopied)
   const capturing = ref(false)
   const redirecting = ref(false)
   const redirected = ref(false)
@@ -712,6 +715,7 @@ export function usePayment() {
 
   const handleCopyPayLink = async () => {
     if (!payLink.value) return
+    if (await copyPayLinkFeedback(payLink.value)) return
     try {
       await copyText(payLink.value)
       copied.value = true
@@ -729,6 +733,7 @@ export function usePayment() {
 
   const handleCopyWalletAddress = async () => {
     if (!cryptoWalletAddress.value) return
+    if (await copyWalletAddressFeedback(cryptoWalletAddress.value)) return
     try {
       await copyText(cryptoWalletAddress.value)
       walletAddressCopied.value = true

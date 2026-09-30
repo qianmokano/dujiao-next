@@ -6,9 +6,7 @@
       </template>
     </PanelHeading>
 
-    <Alert v-if="profileAlert" class="mb-5" :variant="pageAlertVariant(profileAlert.level)" :class="pageAlertToneClass(profileAlert.level)">
-      <AlertDescription>{{ profileAlert.message }}</AlertDescription>
-    </Alert>
+    <PageFeedback v-if="profileAlert" class="mb-5" :level="profileAlert.level" :message="profileAlert.message" />
 
     <form class="space-y-6" @submit.prevent="handleSaveProfile">
       <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
@@ -55,10 +53,11 @@
 import { reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { UserCircle } from 'lucide-vue-next'
-import { pageAlertVariant, pageAlertToneClass, type PageAlert } from '../../utils/alerts'
+import type { PageAlert } from '../../utils/alerts'
+import { useFeedback } from '../../composables/useFeedback'
 import { useUserProfileStore } from '../../stores/userProfile'
 import PanelHeading from '../../components/shared/PanelHeading.vue'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import PageFeedback from '../../components/PageFeedback.vue'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -66,6 +65,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 const { t } = useI18n()
+const { success: notifySuccess } = useFeedback()
 const userProfileStore = useUserProfileStore()
 
 const profileForm = reactive({
@@ -89,10 +89,9 @@ const handleSaveProfile = async () => {
     }
     return
   }
-  profileAlert.value = {
-    level: 'success',
-    message: t('personalCenter.profile.saveSuccess'),
-  }
+  notifySuccess(t('personalCenter.profile.saveSuccess'), () => {
+    profileAlert.value = { level: 'success', message: t('personalCenter.profile.saveSuccess') }
+  })
 }
 
 watch(

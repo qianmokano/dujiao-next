@@ -162,8 +162,8 @@
           </div>
 
           <!-- 提示 -->
-          <div v-if="cannotPurchaseReason" class="my-3.5 rounded-md bg-destructive/10 px-3.5 py-2.5 text-[13.5px] text-destructive">{{ cannotPurchaseReason }}</div>
-          <div v-if="purchaseWarning" class="my-3.5 rounded-md bg-warning/10 px-3.5 py-2.5 text-[13.5px] text-warning">{{ purchaseWarning }}</div>
+          <PageFeedback v-if="cannotPurchaseReason" class="my-3.5" level="error" :message="cannotPurchaseReason" />
+          <PageFeedback v-if="purchaseWarning" class="my-3.5" level="warning" :message="purchaseWarning" />
 
           <!-- 操作 -->
           <div ref="purchaseActionsRef" class="mt-5 flex flex-wrap gap-3">
@@ -251,6 +251,7 @@ import {
 } from 'lucide-vue-next'
 import { processHtmlForDisplay } from '../../utils/content'
 import { useProductDetail } from '../../composables/useProductDetail'
+import PageFeedback from '../../components/PageFeedback.vue'
 import VaultProductMobileBar from '../vault/components/VaultProductMobileBar.vue'
 
 const { t } = useI18n()

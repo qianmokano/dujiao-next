@@ -10,9 +10,7 @@
       </Badge>
     </div>
 
-    <Alert v-if="alert" class="mb-4" :variant="pageAlertVariant(alert.level)" :class="pageAlertToneClass(alert.level)">
-      <AlertDescription>{{ alert.message }}</AlertDescription>
-    </Alert>
+    <PageFeedback v-if="alert" class="mb-4" :level="alert.level" :message="alert.message" />
 
     <!-- 已启用：显示状态、关闭、重新生成恢复码 -->
     <div v-if="status?.enabled" class="space-y-4">
@@ -154,7 +152,8 @@
     >
       <div class="w-full max-w-md rounded-2xl border bg-card p-6 shadow-sm">
         <h4 class="text-lg font-bold text-foreground">{{ t('personalCenter.security.twofa.recoveryTitle') }}</h4>
-        <p class="mt-2 text-sm text-muted-foreground">{{ t('personalCenter.security.twofa.recoveryWarning') }}</p>
+        <PageFeedback v-if="isAtlas" class="mt-2" level="warning" :message="t('personalCenter.security.twofa.recoveryWarning')" />
+        <p v-else class="mt-2 text-sm text-muted-foreground">{{ t('personalCenter.security.twofa.recoveryWarning') }}</p>
         <div class="mt-4 grid grid-cols-2 gap-2">
           <code
             v-for="(c, idx) in recoveryCodes"
@@ -164,7 +163,8 @@
         </div>
         <div class="mt-5 flex gap-2">
           <Button type="button" variant="outline" class="flex-1" @click="copyRecoveryCodes">
-            {{ copied ? t('personalCenter.security.twofa.copied') : t('personalCenter.security.twofa.copy') }}
+            <Check v-if="isAtlas && copied" class="h-4 w-4 text-success" aria-hidden="true" />
+            <span :aria-live="isAtlas ? 'polite' : undefined">{{ copied ? t('personalCenter.security.twofa.copied') : t('personalCenter.security.twofa.copy') }}</span>
           </Button>
           <Button type="button" class="font-bold" @click="acknowledgeRecoveryCodes">
             {{ t('personalCenter.security.twofa.acknowledge') }}
@@ -178,16 +178,20 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { Check } from 'lucide-vue-next'
 import QRCode from 'qrcode'
 import { userTotpAPI } from '../../api/auth'
 import { useUserAuthStore } from '../../stores/userAuth'
-import { pageAlertVariant, pageAlertToneClass, type PageAlert } from '../../utils/alerts'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import type { PageAlert } from '../../utils/alerts'
+import { useFeedback } from '../../composables/useFeedback'
+import { useCopyFeedback } from '../../composables/useCopyFeedback'
+import PageFeedback from '../PageFeedback.vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
 const { t } = useI18n()
+const { isAtlas, success: notifySuccess } = useFeedback()
 const userAuthStore = useUserAuthStore()
 
 interface TwoFactorStatus {
@@ -209,6 +213,7 @@ const qrcodeDataUrl = ref('')
 const enableCode = ref('')
 const recoveryCodes = ref<string[]>([])
 const copied = ref(false)
+const { copy: copyRecoveryFeedback } = useCopyFeedback(() => t('payment.copyFailed'), copied)
 const loading = ref(false)
 const alert = ref<PageAlert | null>(null)
 
@@ -229,8 +234,10 @@ const refreshStatus = async () => {
   try {
     const res = await userTotpAPI.status()
     status.value = res.data.data
+    return true
   } catch (err: any) {
     alert.value = { level: 'error', message: err?.message || t('personalCenter.security.twofa.loadFailed') }
+    return false
   }
 }
 
@@ -276,8 +283,10 @@ const submitEnable = async () => {
     setupResult.value = null
     qrcodeDataUrl.value = ''
     enableCode.value = ''
-    alert.value = { level: 'success', message: t('personalCenter.security.twofa.enableSuccess') }
-    await refreshStatus()
+    const message = t('personalCenter.security.twofa.enableSuccess')
+    if (!isAtlas) alert.value = { level: 'success', message }
+    const refreshed = await refreshStatus()
+    if (isAtlas && refreshed) notifySuccess(message)
   } catch (err: any) {
     alert.value = { level: 'error', message: err?.message || t('personalCenter.security.twofa.enableFailed') }
   } finally {
@@ -327,9 +336,11 @@ const submitDisable = async () => {
   loading.value = true
   try {
     await userTotpAPI.disable(payload)
-    alert.value = { level: 'success', message: t('personalCenter.security.twofa.disableSuccess') }
+    const message = t('personalCenter.security.twofa.disableSuccess')
+    if (!isAtlas) alert.value = { level: 'success', message }
     resetMode()
-    await refreshStatus()
+    const refreshed = await refreshStatus()
+    if (isAtlas && refreshed) notifySuccess(message)
   } catch (err: any) {
     alert.value = { level: 'error', message: err?.message || t('personalCenter.security.twofa.disableFailed') }
   } finally {
@@ -349,8 +360,10 @@ const submitRegenerate = async () => {
     const res = await userTotpAPI.regenerateRecoveryCodes({ code })
     recoveryCodes.value = res.data.data?.recovery_codes || []
     resetMode()
-    alert.value = { level: 'success', message: t('personalCenter.security.twofa.regenerateSuccess') }
-    await refreshStatus()
+    const message = t('personalCenter.security.twofa.regenerateSuccess')
+    if (!isAtlas) alert.value = { level: 'success', message }
+    const refreshed = await refreshStatus()
+    if (isAtlas && refreshed) notifySuccess(message)
   } catch (err: any) {
     alert.value = { level: 'error', message: err?.message || t('personalCenter.security.twofa.regenerateFailed') }
   } finally {
@@ -359,6 +372,7 @@ const submitRegenerate = async () => {
 }
 
 const copyRecoveryCodes = async () => {
+  if (await copyRecoveryFeedback(recoveryCodes.value.join('\n'))) return
   try {
     await navigator.clipboard.writeText(recoveryCodes.value.join('\n'))
     copied.value = true

@@ -144,6 +144,7 @@ import { useAppStore } from '../../../stores/app'
 import { useCartStore } from '../../../stores/cart'
 import { useUserAuthStore } from '../../../stores/userAuth'
 import { useNavConfig } from '../../../composables/useNavConfig'
+import { provideAtlasFeedback } from '../../../composables/useFeedback'
 import { useTheme } from '../../../utils/theme'
 import { getImageUrl } from '../../../utils/image'
 import { getLocalizedText } from '../../../utils/resellerSiteConfig'
@@ -157,6 +158,7 @@ import '@fontsource/nunito-sans/latin-700.css'
 import '../styles/atlas.css'
 
 const { t } = useI18n()
+provideAtlasFeedback()
 const appStore = useAppStore()
 const cartStore = useCartStore()
 const userAuthStore = useUserAuthStore()

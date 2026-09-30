@@ -2,6 +2,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserAuthStore } from '../stores/userAuth'
 import { useI18n } from 'vue-i18n'
+import { useFeedback } from './useFeedback'
 import { debounceAsync } from '../utils/debounce'
 import { useAppStore } from '../stores/app'
 import type { CaptchaPayload } from '../api'
@@ -17,6 +18,7 @@ export function useForgot() {
   const userAuthStore = useUserAuthStore()
   const appStore = useAppStore()
   const { t } = useI18n()
+  const { success: notifySuccess } = useFeedback()
 
   const brandSiteName = computed(() => {
     const siteName = String(appStore.config?.brand?.site_name || '').trim()
@@ -104,6 +106,7 @@ export function useForgot() {
         captcha_payload: getCaptchaPayload(),
       })
       startCountdown()
+      notifySuccess(t('auth.common.codeSent'))
     } catch (err: any) {
       error.value = err.message || t('auth.forgot.errors.sendCodeFailed')
       if (captchaProvider.value === 'image') {

@@ -34,7 +34,7 @@
           </button>
         </div>
 
-        <div v-if="error" class="rounded-md bg-destructive/10 px-3.5 py-2.5 text-[13px] text-destructive">{{ error }}</div>
+        <PageFeedback v-if="error" level="error" :message="error" />
 
         <button type="submit" class="h-11 w-full rounded-md bg-primary text-[14.5px] font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50" :disabled="userAuthStore.loading">
           {{ userAuthStore.loading ? t('auth.login.totp.verifying') : t('auth.login.totp.submit') }}
@@ -120,8 +120,8 @@
           </RouterLink>
         </div>
 
-        <div v-if="info" class="rounded-md bg-success/10 px-3.5 py-2.5 text-[13px] text-success">{{ info }}</div>
-        <div v-if="error" class="rounded-md bg-destructive/10 px-3.5 py-2.5 text-[13px] text-destructive">{{ error }}</div>
+        <PageFeedback v-if="info" level="info" :message="info" />
+        <PageFeedback v-if="error" level="error" :message="error" />
 
         <button type="submit" class="h-11 w-full rounded-md bg-primary text-[14.5px] font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50" :disabled="userAuthStore.loading">
           {{ userAuthStore.loading ? t('auth.login.submitting') : t('auth.login.submit') }}
@@ -183,6 +183,7 @@ import FormField from '../../../components/FormField.vue'
 import GoogleIdentityButton from '../../../components/auth/GoogleIdentityButton.vue'
 import { Input } from '@/components/ui/input'
 import { useLogin } from '../../../composables/useLogin'
+import PageFeedback from '../../../components/PageFeedback.vue'
 
 const { t } = useI18n()
 

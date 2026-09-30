@@ -134,7 +134,7 @@
         </div>
 
         <div v-if="previewLoading || couponRefreshing" class="mt-3 text-[12.5px] text-muted-foreground">{{ previewStatusText }}</div>
-        <div v-if="checkoutAlert" class="mt-3.5 rounded-md px-3 py-2.5 text-[13px]" :class="checkoutAlert.level === 'error' ? 'bg-destructive/10 text-destructive' : 'bg-warning/10 text-warning'">{{ checkoutAlert.message }}</div>
+        <PageFeedback v-if="checkoutAlert" class="mt-3.5" :level="checkoutAlert.level" :message="checkoutAlert.message" />
 
         <!-- 支付方式 -->
         <div class="my-5 border-t pt-4">
@@ -207,6 +207,7 @@ import TurnstileCaptcha from '../../components/captcha/TurnstileCaptcha.vue'
 import CheckoutManualForm from '../../components/checkout/CheckoutManualForm.vue'
 import VaultCheckoutSteps from '../vault/components/VaultCheckoutSteps.vue'
 import { useCheckout } from '../../composables/useCheckout'
+import PageFeedback from '../../components/PageFeedback.vue'
 
 const { t } = useI18n()
 

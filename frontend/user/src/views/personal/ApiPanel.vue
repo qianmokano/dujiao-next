@@ -9,9 +9,7 @@
             </template>
           </PanelHeading>
 
-          <Alert v-if="panelAlert" class="mb-5" :variant="pageAlertVariant(panelAlert.level)" :class="pageAlertToneClass(panelAlert.level)">
-            <AlertDescription>{{ panelAlert.message }}</AlertDescription>
-          </Alert>
+          <PageFeedback v-if="panelAlert" class="mb-5" :level="panelAlert.level" :message="panelAlert.message" />
 
           <!-- Loading -->
           <div v-if="loading" class="space-y-3">
@@ -95,8 +93,9 @@
                   <span class="rounded-lg border border-border bg-muted/30 px-2 py-1 font-mono text-sm text-foreground break-all">
                     {{ credential.api_key || '-' }}
                   </span>
-                  <Button type="button" variant="outline" size="sm" @click="copyToClipboard(credential.api_key || '')">
-                    {{ t('personalCenter.apiPanel.copy') }}
+                  <Button type="button" variant="outline" size="sm" @click="copyToClipboard(credential.api_key || '', 'key')">
+                    <Check v-if="keyCopied" class="h-4 w-4 text-success" aria-hidden="true" />
+                    <span :aria-live="isAtlas ? 'polite' : undefined">{{ keyCopied ? t('payment.copied') : t('personalCenter.apiPanel.copy') }}</span>
                   </Button>
                 </div>
               </div>
@@ -138,9 +137,10 @@
                       <button
                         type="button"
                         class="inline-flex items-center rounded-lg border border-success/30 bg-success/10 px-2.5 py-1 text-xs font-semibold text-success transition-colors hover:bg-success/20"
-                        @click="copyToClipboard(newSecret)"
+                        @click="copyToClipboard(newSecret, 'secret')"
                       >
-                        {{ t('personalCenter.apiPanel.copySecret') }}
+                        <Check v-if="secretCopied" class="h-4 w-4 text-success" aria-hidden="true" />
+                        <span :aria-live="isAtlas ? 'polite' : undefined">{{ secretCopied ? t('payment.copied') : t('personalCenter.apiPanel.copySecret') }}</span>
                       </button>
                     </div>
                   </div>
@@ -210,14 +210,19 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { apiCredentialAPI } from '../../api'
-import { pageAlertVariant, pageAlertToneClass, type PageAlert } from '../../utils/alerts'
+import type { PageAlert } from '../../utils/alerts'
+import { useFeedback } from '../../composables/useFeedback'
+import { useCopyFeedback } from '../../composables/useCopyFeedback'
 import { AlertTriangle, XCircle, Info, Check, Key } from 'lucide-vue-next'
 import PanelHeading from '../../components/shared/PanelHeading.vue'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import PageFeedback from '../../components/PageFeedback.vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 
 const { t } = useI18n()
+const { isAtlas, success: notifySuccess } = useFeedback()
+const { copied: keyCopied, copy: copyKeyFeedback } = useCopyFeedback(() => t('personalCenter.apiPanel.copyFailed'))
+const { copied: secretCopied, copy: copySecretFeedback } = useCopyFeedback(() => t('personalCenter.apiPanel.copyFailed'))
 
 interface CredentialData {
   id: number
@@ -265,9 +270,14 @@ const loadCredential = async () => {
       // 检查用户是否已生成过密钥
       hasViewedSecret.value = localStorage.getItem(secretViewedKey) === String(data.id)
     }
+    return true
   } catch (err: any) {
-    // 404 or no credential is normal
-    credential.value = null
+    if (isAtlas) {
+      panelAlert.value = { level: 'error', message: err?.message || t('personalCenter.common.loadFailed') }
+    } else {
+      credential.value = null
+    }
+    return false
   } finally {
     loading.value = false
   }
@@ -278,11 +288,11 @@ const handleApply = async () => {
   panelAlert.value = null
   try {
     await apiCredentialAPI.apply()
-    panelAlert.value = {
-      level: 'success',
-      message: t('personalCenter.apiPanel.applySuccess'),
-    }
-    await loadCredential()
+    if (isAtlas && !await loadCredential()) return
+    notifySuccess(t('personalCenter.apiPanel.applySuccess'), () => {
+      panelAlert.value = { level: 'success', message: t('personalCenter.apiPanel.applySuccess') }
+    })
+    if (!isAtlas) await loadCredential()
   } catch (err: any) {
     panelAlert.value = {
       level: 'error',
@@ -306,11 +316,11 @@ const handleFirstGenerate = async () => {
       localStorage.setItem(secretViewedKey, String(credential.value.id))
       hasViewedSecret.value = true
     }
-    await loadCredential()
-    panelAlert.value = {
-      level: 'success',
-      message: t('personalCenter.apiPanel.generateSuccess'),
-    }
+    const refreshed = await loadCredential()
+    if (isAtlas && !refreshed) return
+    notifySuccess(t('personalCenter.apiPanel.generateSuccess'), () => {
+      panelAlert.value = { level: 'success', message: t('personalCenter.apiPanel.generateSuccess') }
+    })
   } catch (err: any) {
     panelAlert.value = {
       level: 'error',
@@ -340,11 +350,11 @@ const confirmRegenerate = async () => {
       hasViewedSecret.value = true
     }
     // Reload credential to get updated masked secret
-    await loadCredential()
-    panelAlert.value = {
-      level: 'success',
-      message: t('personalCenter.apiPanel.regenerateSuccess'),
-    }
+    const refreshed = await loadCredential()
+    if (isAtlas && !refreshed) return
+    notifySuccess(t('personalCenter.apiPanel.regenerateSuccess'), () => {
+      panelAlert.value = { level: 'success', message: t('personalCenter.apiPanel.regenerateSuccess') }
+    })
   } catch (err: any) {
     panelAlert.value = {
       level: 'error',
@@ -364,10 +374,8 @@ const handleToggleStatus = async () => {
   try {
     await apiCredentialAPI.updateStatus({ is_active: newStatus })
     credential.value.is_active = newStatus
-    panelAlert.value = {
-      level: 'success',
-      message: newStatus ? t('personalCenter.apiPanel.enabled') : t('personalCenter.apiPanel.disabled'),
-    }
+    const message = newStatus ? t('personalCenter.apiPanel.enabled') : t('personalCenter.apiPanel.disabled')
+    notifySuccess(message, () => { panelAlert.value = { level: 'success', message } })
   } catch (err: any) {
     panelAlert.value = {
       level: 'error',
@@ -378,8 +386,10 @@ const handleToggleStatus = async () => {
   }
 }
 
-const copyToClipboard = async (text: string) => {
+const copyToClipboard = async (text: string, target: 'key' | 'secret') => {
   if (!text) return
+  const copyFeedback = target === 'key' ? copyKeyFeedback : copySecretFeedback
+  if (await copyFeedback(text)) return
   try {
     await navigator.clipboard.writeText(text)
     panelAlert.value = {

@@ -9,9 +9,7 @@
             </template>
           </PanelHeading>
 
-          <Alert v-if="panelAlert" class="mb-5" :variant="pageAlertVariant(panelAlert.level)" :class="pageAlertToneClass(panelAlert.level)">
-            <AlertDescription>{{ panelAlert.message }}</AlertDescription>
-          </Alert>
+          <PageFeedback v-if="panelAlert" class="mb-5" :level="panelAlert.level" :message="panelAlert.message" />
 
           <div
             v-if="lastRedeem"
@@ -93,18 +91,20 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { giftCardAPI, type CaptchaPayload, type GiftCardRedeemResult } from '../../api'
 import { useAppStore } from '../../stores/app'
-import { pageAlertVariant, pageAlertToneClass, type PageAlert } from '../../utils/alerts'
+import type { PageAlert } from '../../utils/alerts'
+import { useFeedback } from '../../composables/useFeedback'
 import ImageCaptcha from '../../components/captcha/ImageCaptcha.vue'
 import TurnstileCaptcha from '../../components/captcha/TurnstileCaptcha.vue'
 import { Check, Gift } from 'lucide-vue-next'
 import PanelHeading from '../../components/shared/PanelHeading.vue'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import PageFeedback from '../../components/PageFeedback.vue'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
 const { t } = useI18n()
+const { success: notifySuccess } = useFeedback()
 const appStore = useAppStore()
 
 const redeemForm = reactive({
@@ -213,13 +213,11 @@ const submitRedeem = async () => {
     })
     const payload = response.data.data || ({} as GiftCardRedeemResult)
     lastRedeem.value = payload
-    panelAlert.value = {
-      level: 'success',
-      message: t('personalCenter.giftCard.redeemSuccess', {
-        amount: String(payload.wallet_delta || payload.gift_card?.amount || ''),
-        currency: String(payload.gift_card?.currency || appStore.config?.currency || 'CNY'),
-      }),
-    }
+    const message = t('personalCenter.giftCard.redeemSuccess', {
+      amount: String(payload.wallet_delta || payload.gift_card?.amount || ''),
+      currency: String(payload.gift_card?.currency || appStore.config?.currency || 'CNY'),
+    })
+    notifySuccess(message, () => { panelAlert.value = { level: 'success', message } })
     redeemForm.code = ''
     resetCaptcha()
   } catch (err: any) {

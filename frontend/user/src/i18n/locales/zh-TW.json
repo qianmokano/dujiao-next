@@ -1007,6 +1007,7 @@
   "auth": {
     "common": {
       "sendCode": "發送驗證碼",
+      "codeSent": "驗證碼已發送",
       "countdown": "{seconds}s",
       "captchaLabel": "驗證碼",
       "captchaRequired": "請先完成驗證碼",

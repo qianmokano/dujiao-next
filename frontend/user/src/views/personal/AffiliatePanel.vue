@@ -7,9 +7,7 @@
         </template>
       </PanelHeading>
 
-      <Alert v-if="panelAlert" class="mb-5" :variant="pageAlertVariant(panelAlert.level)" :class="pageAlertToneClass(panelAlert.level)">
-        <AlertDescription>{{ panelAlert.message }}</AlertDescription>
-      </Alert>
+      <PageFeedback v-if="panelAlert" class="mb-5" :level="panelAlert.level" :message="panelAlert.message" />
 
       <div v-if="loading" class="space-y-3">
         <div v-for="idx in 3" :key="idx" class="h-16 animate-pulse rounded-xl border bg-muted"></div>
@@ -22,7 +20,8 @@
             <div class="mt-2 flex flex-wrap items-center gap-2">
               <span class="rounded-lg border border-border bg-muted/30 px-2 py-1 font-mono text-sm text-foreground">{{ dashboard?.affiliate_code || '-' }}</span>
               <Button type="button" variant="outline" size="sm" @click="copyPromotionUrl">
-                {{ t('personalCenter.affiliate.copyPromotionUrl') }}
+                <Check v-if="promotionCopied" class="h-4 w-4 text-success" aria-hidden="true" />
+                <span :aria-live="isAtlas ? 'polite' : undefined">{{ promotionCopied ? t('payment.copied') : t('personalCenter.affiliate.copyPromotionUrl') }}</span>
               </Button>
             </div>
             <div class="mt-3 text-xs text-muted-foreground break-all">{{ promotionUrl }}</div>
@@ -205,7 +204,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Megaphone } from 'lucide-vue-next'
+import { Check, Megaphone } from 'lucide-vue-next'
 import PanelHeading from '../../components/shared/PanelHeading.vue'
 import { affiliateAPI, type AffiliateCommissionData, type AffiliateDashboardData, type AffiliateWithdrawData } from '../../api'
 import {
@@ -218,9 +217,11 @@ import {
   AFFILIATE_WITHDRAW_STATUS_REJECTED,
 } from '../../constants/affiliate'
 import { useAppStore } from '../../stores/app'
-import { pageAlertVariant, pageAlertToneClass, type PageAlert } from '../../utils/alerts'
+import type { PageAlert } from '../../utils/alerts'
+import { useFeedback } from '../../composables/useFeedback'
+import { useCopyFeedback } from '../../composables/useCopyFeedback'
 import type { BadgeTone } from '../../utils/status'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import PageFeedback from '../../components/PageFeedback.vue'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -230,6 +231,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import PaginationNav from '../../components/PaginationNav.vue'
 
 const { t } = useI18n()
+const { isAtlas, success: notifySuccess } = useFeedback()
+const { copied: promotionCopied, copy: copyPromotionFeedback } = useCopyFeedback(() => t('personalCenter.affiliate.errors.copyFailed'))
 const appStore = useAppStore()
 
 const loading = ref(true)
@@ -293,11 +296,13 @@ const loadDashboard = async () => {
   try {
     const response = await affiliateAPI.dashboard()
     dashboard.value = response.data.data || null
+    return true
   } catch (err: any) {
     panelAlert.value = {
       level: 'error',
       message: err?.message || t('personalCenter.affiliate.errors.loadFailed'),
     }
+    return false
   }
 }
 
@@ -310,8 +315,11 @@ const loadCommissions = async (page = 1) => {
     })
     commissions.value = response.data.data || []
     Object.assign(commissionsPagination, response.data.pagination || commissionsPagination)
-  } catch {
+    return true
+  } catch (err: any) {
     commissions.value = []
+    if (isAtlas) panelAlert.value = { level: 'error', message: err?.message || t('personalCenter.affiliate.errors.loadFailed') }
+    return false
   } finally {
     commissionsLoading.value = false
   }
@@ -326,16 +334,20 @@ const loadWithdraws = async (page = 1) => {
     })
     withdraws.value = response.data.data || []
     Object.assign(withdrawsPagination, response.data.pagination || withdrawsPagination)
-  } catch {
+    return true
+  } catch (err: any) {
     withdraws.value = []
+    if (isAtlas) panelAlert.value = { level: 'error', message: err?.message || t('personalCenter.affiliate.errors.loadFailed') }
+    return false
   } finally {
     withdrawsLoading.value = false
   }
 }
 
 const reloadOpenedData = async () => {
-  if (!dashboard.value?.opened) return
-  await Promise.all([loadCommissions(1), loadWithdraws(1)])
+  if (!dashboard.value?.opened) return true
+  const results = await Promise.all([loadCommissions(1), loadWithdraws(1)])
+  return results.every(Boolean)
 }
 
 const initialize = async () => {
@@ -352,12 +364,12 @@ const openAffiliate = async () => {
   panelAlert.value = null
   try {
     await affiliateAPI.open()
-    await loadDashboard()
-    await reloadOpenedData()
-    panelAlert.value = {
-      level: 'success',
-      message: t('personalCenter.affiliate.openSuccess'),
-    }
+    const dashboardLoaded = await loadDashboard()
+    const listsLoaded = await reloadOpenedData()
+    if (isAtlas && (!dashboardLoaded || !listsLoaded)) return
+    notifySuccess(t('personalCenter.affiliate.openSuccess'), () => {
+      panelAlert.value = { level: 'success', message: t('personalCenter.affiliate.openSuccess') }
+    })
   } catch (err: any) {
     panelAlert.value = {
       level: 'error',
@@ -401,11 +413,14 @@ const handleApplyWithdraw = async () => {
     })
     withdrawForm.amount = ''
     withdrawForm.account = ''
-    panelAlert.value = {
-      level: 'success',
-      message: t('personalCenter.affiliate.withdrawSuccess'),
+    if (isAtlas) {
+      const results = await Promise.all([loadDashboard(), loadWithdraws(1)])
+      if (!results.every(Boolean)) return
     }
-    await Promise.all([loadDashboard(), loadWithdraws(1)])
+    notifySuccess(t('personalCenter.affiliate.withdrawSuccess'), () => {
+      panelAlert.value = { level: 'success', message: t('personalCenter.affiliate.withdrawSuccess') }
+    })
+    if (!isAtlas) await Promise.all([loadDashboard(), loadWithdraws(1)])
   } catch (err: any) {
     panelAlert.value = {
       level: 'error',
@@ -418,6 +433,7 @@ const handleApplyWithdraw = async () => {
 
 const copyPromotionUrl = async () => {
   if (!dashboard.value?.affiliate_code || !promotionUrl.value || promotionUrl.value === '-') return
+  if (await copyPromotionFeedback(promotionUrl.value)) return
   try {
     await navigator.clipboard.writeText(promotionUrl.value)
     panelAlert.value = {

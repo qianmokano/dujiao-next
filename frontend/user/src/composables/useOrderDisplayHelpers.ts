@@ -8,6 +8,7 @@ import { amountToCents, centsToAmount } from '../utils/money'
 import { buildSkuDisplayTextFromSnapshot } from '../utils/sku'
 import { getImageUrl } from '../utils/image'
 import { copyText } from '../utils/clipboard'
+import { useCopyFeedback } from './useCopyFeedback'
 
 interface ManualFormSnapshotField {
   key: string
@@ -23,6 +24,7 @@ export function useOrderDisplayHelpers(order: Ref<any>) {
   const { t } = useI18n()
 
   const fulfillmentCopied = ref(false)
+  const { copy: copyFulfillmentFeedback } = useCopyFeedback(() => t('payment.copyFailed'), fulfillmentCopied)
   let fulfillmentCopiedTimer: ReturnType<typeof setTimeout> | null = null
 
   const showTimeCard = computed(() => {
@@ -287,6 +289,7 @@ export function useOrderDisplayHelpers(order: Ref<any>) {
     const lines = fulfillmentDeliveryLines(fulfillment)
     const text = lines.length > 0 ? lines.join('\n') : (fulfillment?.payload || '')
     if (!text) return
+    if (await copyFulfillmentFeedback(text)) return
     try {
       await copyText(text)
       fulfillmentCopied.value = true

@@ -11,9 +11,7 @@
         </template>
       </PanelHeading>
 
-      <Alert v-if="securityAlert" class="mb-5" :variant="pageAlertVariant(securityAlert.level)" :class="pageAlertToneClass(securityAlert.level)">
-        <AlertDescription>{{ securityAlert.message }}</AlertDescription>
-      </Alert>
+      <PageFeedback v-if="securityAlert" class="mb-5" :level="securityAlert.level" :message="securityAlert.message" />
 
       <TelegramBindingSection
         :telegram-enabled="telegramEnabled"
@@ -101,9 +99,10 @@ import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { ShieldCheck } from 'lucide-vue-next'
-import { pageAlertVariant, pageAlertToneClass, type PageAlert } from '../../utils/alerts'
+import type { PageAlert } from '../../utils/alerts'
+import { useFeedback } from '../../composables/useFeedback'
 import PanelHeading from '../../components/shared/PanelHeading.vue'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import PageFeedback from '../../components/PageFeedback.vue'
 import { Badge } from '@/components/ui/badge'
 import { userProfileAPI } from '../../api/user'
 import type { TelegramAuthPayload } from '../../api'
@@ -129,6 +128,7 @@ import PasswordChangeForm from '../../components/security/PasswordChangeForm.vue
 import TwoFactorSection from '../../components/security/TwoFactorSection.vue'
 
 const { t } = useI18n()
+const { isAtlas, success: notifySuccess } = useFeedback()
 const route = useRoute()
 const router = useRouter()
 const appStore = useAppStore()
@@ -255,10 +255,9 @@ const handleSendOldCode = async () => {
     return
   }
   startCooldown('old')
-  securityAlert.value = {
-    level: 'success',
-    message: t('personalCenter.security.sendOldCodeSuccess'),
-  }
+  notifySuccess(t('personalCenter.security.sendOldCodeSuccess'), () => {
+    securityAlert.value = { level: 'success', message: t('personalCenter.security.sendOldCodeSuccess') }
+  })
 }
 
 const handleSendNewCode = async () => {
@@ -280,10 +279,9 @@ const handleSendNewCode = async () => {
     return
   }
   startCooldown('new')
-  securityAlert.value = {
-    level: 'success',
-    message: t('personalCenter.security.sendNewCodeSuccess'),
-  }
+  notifySuccess(t('personalCenter.security.sendNewCodeSuccess'), () => {
+    securityAlert.value = { level: 'success', message: t('personalCenter.security.sendNewCodeSuccess') }
+  })
 }
 
 const handleChangeEmail = async () => {
@@ -319,12 +317,10 @@ const handleChangeEmail = async () => {
   securityForm.newCode = ''
   oldCodeCooldown.value = 0
   newCodeCooldown.value = 0
-  securityAlert.value = {
-    level: 'success',
-    message: requiresOldCode
-      ? t('personalCenter.security.changeEmailSuccess')
-      : t('personalCenter.security.bindEmailSuccess'),
-  }
+  const message = requiresOldCode
+    ? t('personalCenter.security.changeEmailSuccess')
+    : t('personalCenter.security.bindEmailSuccess')
+  notifySuccess(message, () => { securityAlert.value = { level: 'success', message } })
 }
 
 const handleChangePassword = async () => {
@@ -369,11 +365,13 @@ const handleChangePassword = async () => {
   passwordForm.oldPassword = ''
   passwordForm.newPassword = ''
   passwordForm.confirmPassword = ''
-  securityAlert.value = {
-    level: 'success',
-    message: needOldPassword
-      ? t('personalCenter.security.changePasswordSuccess')
-      : t('personalCenter.security.setPasswordSuccess'),
+  if (!isAtlas) {
+    securityAlert.value = {
+      level: 'success',
+      message: needOldPassword
+        ? t('personalCenter.security.changePasswordSuccess')
+        : t('personalCenter.security.setPasswordSuccess'),
+    }
   }
 
   userAuthStore.logout('/auth/login?reason=password_changed')
@@ -442,15 +440,11 @@ const refreshExternalIdentityBindings = async (): Promise<boolean> => {
 
 const finishExternalIdentityMutation = async (successMessage: string) => {
   const refreshed = await refreshExternalIdentityBindings()
-  securityAlert.value = refreshed
-    ? {
-        level: 'success',
-        message: successMessage,
-      }
-    : {
-        level: 'warning',
-        message: t('personalCenter.security.externalIdentityRefreshFailed'),
-      }
+  if (refreshed) {
+    notifySuccess(successMessage, () => { securityAlert.value = { level: 'success', message: successMessage } })
+  } else {
+    securityAlert.value = { level: 'warning', message: t('personalCenter.security.externalIdentityRefreshFailed') }
+  }
 }
 
 const handleTelegramBind = async (raw: any) => {

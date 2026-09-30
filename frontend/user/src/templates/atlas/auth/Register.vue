@@ -143,7 +143,7 @@
             </span>
           </label>
 
-          <div v-if="error" class="rounded-md bg-destructive/10 px-3.5 py-2.5 text-[13px] text-destructive">{{ error }}</div>
+          <PageFeedback v-if="error" level="error" :message="error" />
 
           <button type="submit" class="h-11 w-full rounded-md bg-primary text-[14.5px] font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50" :disabled="userAuthStore.loading || !agreed">
             {{ userAuthStore.loading ? t('auth.register.creating') : t('auth.register.create') }}
@@ -166,6 +166,7 @@ import TurnstileCaptcha from '../../../components/captcha/TurnstileCaptcha.vue'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useRegister } from '../../../composables/useRegister'
+import PageFeedback from '../../../components/PageFeedback.vue'
 
 const { t } = useI18n()
 

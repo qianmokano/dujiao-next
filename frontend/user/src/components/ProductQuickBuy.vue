@@ -275,10 +275,12 @@
             </div>
 
             <!-- Warning -->
-            <p v-if="stockBelowMinPurchase" class="mb-4 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs font-medium text-warning">
+            <PageFeedback v-if="isAtlas && stockBelowMinPurchase" class="mb-4" level="warning" :message="t('productDetail.stockBelowMinPurchase', { count: effectiveMin })" />
+            <PageFeedback v-else-if="isAtlas && purchaseWarning" class="mb-4" level="warning" :message="purchaseWarning" />
+            <p v-else-if="!isAtlas && stockBelowMinPurchase" class="mb-4 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs font-medium text-warning">
               {{ t('productDetail.stockBelowMinPurchase', { count: effectiveMin }) }}
             </p>
-            <p v-else-if="purchaseWarning" class="mb-4 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs font-medium text-warning">
+            <p v-else-if="!isAtlas && purchaseWarning" class="mb-4 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs font-medium text-warning">
               {{ purchaseWarning }}
             </p>
           </div>
@@ -341,6 +343,8 @@ import { normalizeSkuId, buildSkuDisplayText } from '../utils/sku'
 import { resolveSkuAvailableStock, resolveSkuStockDisplay, type PublicStockDisplay } from '../utils/publicStock'
 import { useLocalized, useProductLabels } from '../composables/useProduct'
 import { toast } from '../composables/useToast'
+import { useFeedback } from '../composables/useFeedback'
+import PageFeedback from './PageFeedback.vue'
 import { X, Image as ImageIcon, Tag, Minus, Plus, ShoppingCart } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -357,6 +361,7 @@ const emit = defineEmits<{
 const router = useRouter()
 const route = useRoute()
 const { t } = useI18n()
+const { isAtlas, success: notifySuccess } = useFeedback()
 const appStore = useAppStore()
 const cartStore = useCartStore()
 const buyNowStore = useBuyNowStore()
@@ -762,7 +767,7 @@ const handleAddToCart = () => {
     paymentChannelIds: Array.isArray(props.product.payment_channel_ids) && props.product.payment_channel_ids.length > 0 ? props.product.payment_channel_ids : undefined,
     quantity: 1,
   }, quantity.value)
-  toast.success(t('toast.addedToCart'))
+  notifySuccess(t('toast.addedToCart'), () => { toast.success(t('toast.addedToCart')) })
   close()
 }
 

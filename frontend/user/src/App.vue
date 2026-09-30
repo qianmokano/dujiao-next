@@ -32,7 +32,7 @@
     </template>
 
     <Loading :loading="appStore.loading" />
-    <Toast />
+    <Toast :appearance="toastAppearance" />
     <ConfirmDialog />
   </div>
 </template>
@@ -42,6 +42,7 @@ import { computed, defineAsyncComponent } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAppStore } from './stores/app'
 import { getActiveTemplate } from './templates/registry'
+import { resolveToastAppearance } from './utils/feedback'
 import Navbar from './components/Navbar.vue'
 import Footer from './components/Footer.vue'
 import Loading from './components/Loading.vue'
@@ -61,6 +62,7 @@ const templateLayouts = {
 const appStore = useAppStore()
 const route = useRoute()
 const isResellerConsole = computed(() => route.meta.resellerConsole === true)
+const toastAppearance = computed(() => resolveToastAppearance(getActiveTemplate(), isResellerConsole.value))
 // getActiveTemplate 读取 appStore.config（响应式），config 加载后会重新计算
 const templateLayout = computed(() => {
     const active = getActiveTemplate()

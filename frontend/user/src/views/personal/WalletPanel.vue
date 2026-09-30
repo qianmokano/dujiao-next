@@ -44,12 +44,14 @@ import { useI18n } from 'vue-i18n'
 import { walletAPI } from '../../api'
 import { useAppStore } from '../../stores/app'
 import type { PageAlert } from '../../utils/alerts'
+import { useFeedback } from '../../composables/useFeedback'
 import { amountToCents, basisPointsToPercent, calculateFeeCents, centsToAmount, rateToBasisPoints } from '../../utils/money'
 import WalletBalanceCard from '../../components/wallet/WalletBalanceCard.vue'
 import WalletRechargeForm from '../../components/wallet/WalletRechargeForm.vue'
 import WalletTransactionList from '../../components/wallet/WalletTransactionList.vue'
 
 const { t } = useI18n()
+const { success: notifySuccess } = useFeedback()
 const route = useRoute()
 const router = useRouter()
 const appStore = useAppStore()
@@ -334,10 +336,9 @@ const handleRecharge = async () => {
     if (rechargeNo) {
       router.push(`/recharge-orders/${encodeURIComponent(rechargeNo)}`)
     } else {
-      walletAlert.value = {
-        level: 'success',
-        message: t('personalCenter.wallet.createPaymentSuccess'),
-      }
+      notifySuccess(t('personalCenter.wallet.createPaymentSuccess'), () => {
+        walletAlert.value = { level: 'success', message: t('personalCenter.wallet.createPaymentSuccess') }
+      })
     }
   } catch (err: any) {
     walletAlert.value = {

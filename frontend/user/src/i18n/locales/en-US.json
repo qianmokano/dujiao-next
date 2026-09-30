@@ -1007,6 +1007,7 @@
   "auth": {
     "common": {
       "sendCode": "Send code",
+      "codeSent": "Verification code sent",
       "countdown": "{seconds}s",
       "captchaLabel": "Captcha",
       "captchaRequired": "Please complete captcha verification first",
