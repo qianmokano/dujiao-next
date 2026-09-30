@@ -50,30 +50,18 @@
       </Transition>
     </div>
 
-    <div v-if="banners.length > 1" class="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
-      <button type="button" class="atlas-banner-control" :aria-label="t('common.previousBanner')" @click="carousel.previous()"><ChevronLeft class="h-4 w-4" aria-hidden="true" /></button>
-      <div class="flex flex-wrap justify-center" role="group" :aria-label="t('atlas.hero.slides')">
-        <button
-          v-for="(item, index) in banners"
-          :key="item.id"
-          type="button"
-          class="atlas-banner-control"
-          :aria-label="t('common.switchBanner', { n: index + 1 })"
-          :aria-current="index === carouselState.index ? 'true' : undefined"
-          @click="carousel.select(index)"
-        >
-          <span class="h-1.5 rounded-full" :class="index === carouselState.index ? 'w-5 bg-foreground' : 'w-1.5 bg-muted-foreground/40'" aria-hidden="true"></span>
-        </button>
-      </div>
-      <button type="button" class="atlas-banner-control" :aria-label="t('common.nextBanner')" @click="carousel.next()"><ChevronRight class="h-4 w-4" aria-hidden="true" /></button>
+    <div v-if="banners.length > 1" class="mt-3 flex flex-wrap justify-center" role="group" :aria-label="t('atlas.hero.slides')">
       <button
-        v-if="!carouselState.reducedMotion"
+        v-for="(item, index) in banners"
+        :key="item.id"
         type="button"
         class="atlas-banner-control"
-        :aria-label="carouselState.manualPaused ? t('atlas.hero.resume') : t('atlas.hero.pause')"
-        :aria-pressed="carouselState.manualPaused"
-        @click="carousel.setPaused('manual', !carouselState.manualPaused)"
-      ><component :is="carouselState.manualPaused ? Play : Pause" class="h-4 w-4" aria-hidden="true" /></button>
+        :aria-label="t('common.switchBanner', { n: index + 1 })"
+        :aria-current="index === carouselState.index ? 'true' : undefined"
+        @click="carousel.select(index)"
+      >
+        <span class="h-1.5 rounded-full" :class="index === carouselState.index ? 'w-5 bg-foreground' : 'w-1.5 bg-muted-foreground/40'" aria-hidden="true"></span>
+      </button>
     </div>
   </section>
 </template>
@@ -82,7 +70,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-vue-next'
+import { ChevronRight } from 'lucide-vue-next'
 import { bannerAPI } from '../../../api'
 import { useLocalized } from '../../../composables/useProduct'
 import { useAppStore } from '../../../stores/app'

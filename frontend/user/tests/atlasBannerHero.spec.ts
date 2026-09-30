@@ -79,6 +79,25 @@ describe('Atlas Banner component', () => {
     expect(root.querySelector('img')).toBeNull()
   })
 
+  it('shows only slide indicators, selects a slide and restarts the autoplay interval', async () => {
+    await mount()
+    const controls = root.querySelector('[role="group"]')!
+    expect(Array.from(controls.querySelectorAll('button'), button => button.getAttribute('aria-label'))).toEqual([
+      'common.switchBanner:1', 'common.switchBanner:2', 'common.switchBanner:3',
+    ])
+    expect(root.querySelectorAll('.atlas-banner-control').length).toBe(3)
+    await vi.advanceTimersByTimeAsync(4000)
+    control('common.switchBanner:3').click()
+    await settle()
+    await vi.advanceTimersByTimeAsync(1300)
+    expect(root.querySelector('h1')?.textContent).toBe('订阅 3')
+    expect(control('common.switchBanner:3').getAttribute('aria-current')).toBe('true')
+    expect(control('common.switchBanner:1').getAttribute('aria-current')).toBeNull()
+    await vi.advanceTimersByTimeAsync(4000)
+    expect(root.querySelector('h1')?.textContent).toBe('订阅 1')
+    expect(control('common.switchBanner:1').getAttribute('aria-current')).toBe('true')
+  })
+
   it('keeps copy and controls after an image fails and shows other images', async () => {
     await mount()
     root.querySelector('img')!.dispatchEvent(new Event('error'))
@@ -86,10 +105,10 @@ describe('Atlas Banner component', () => {
     expect(root.querySelector('img')).toBeNull()
     expect(cta().textContent).toContain('atlas.hero.subscribe')
     await setMatch(motion, true)
-    control('common.nextBanner').click()
+    control('common.switchBanner:2').click()
     await settle()
     expect(root.querySelector('img')?.getAttribute('src')).toBe('/banner-2.png')
-    control('common.previousBanner').click()
+    control('common.switchBanner:1').click()
     await settle()
     expect(root.querySelector('img')).toBeNull()
     control('common.switchBanner:3').click()
@@ -138,7 +157,7 @@ describe('Atlas Banner component', () => {
     open.mockRestore()
   })
 
-  it('autoplays, stacks hover/focus/visibility pauses and preserves manual pause', async () => {
+  it('autoplays, stacks hover/focus/visibility pauses and resumes cycling', async () => {
     await mount()
     await vi.advanceTimersByTimeAsync(5300)
     expect(root.querySelector('h1')?.textContent).toBe('订阅 2')
@@ -147,7 +166,7 @@ describe('Atlas Banner component', () => {
     cta().dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
     await visibility(true)
     region.dispatchEvent(new Event('mouseleave'))
-    cta().dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: control('common.nextBanner') }))
+    cta().dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: control('common.switchBanner:2') }))
     await vi.advanceTimersByTimeAsync(10000)
     expect(root.querySelector('h1')?.textContent).toBe('订阅 2')
     await visibility(false)
@@ -156,25 +175,17 @@ describe('Atlas Banner component', () => {
     region.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
     await vi.advanceTimersByTimeAsync(5300)
     expect(root.querySelector('h1')?.textContent).toBe('订阅 3')
-    control('atlas.hero.pause').click()
-    await settle()
-    expect(control('atlas.hero.resume').getAttribute('aria-pressed')).toBe('true')
-    await visibility(true)
-    await visibility(false)
-    await vi.advanceTimersByTimeAsync(10000)
-    expect(root.querySelector('h1')?.textContent).toBe('订阅 3')
-    control('atlas.hero.resume').click()
     await vi.advanceTimersByTimeAsync(5300)
     expect(root.querySelector('h1')?.textContent).toBe('订阅 1')
   })
 
-  it('reduced motion removes autoplay and animation while retaining manual controls', async () => {
+  it('reduced motion removes autoplay and animation while retaining slide indicators', async () => {
     Object.defineProperty(motion, 'matches', { configurable: true, value: true })
     await mount()
-    expect(root.querySelector('button[aria-label="atlas.hero.pause"]')).toBeNull()
+    expect(root.querySelectorAll('.atlas-banner-control').length).toBe(3)
     await vi.advanceTimersByTimeAsync(10000)
     expect(root.querySelector('h1')?.textContent).toBe('订阅 1')
-    control('common.nextBanner').click()
+    control('common.switchBanner:2').click()
     await settle()
     expect(root.querySelector('h1')?.textContent).toBe('订阅 2')
     expect(root.querySelector('[class*="fade-enter"]')).toBeNull()
