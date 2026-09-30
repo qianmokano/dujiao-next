@@ -1,6 +1,6 @@
 <template>
   <Teleport to="body">
-    <div class="fixed z-[100] pointer-events-none" :class="positionClass">
+    <div class="fixed z-[100] pointer-events-none" :class="[positionClass, appearance === 'atlas' ? 'w-max max-w-[calc(100vw-32px)]' : '']">
       <TransitionGroup
         enter-active-class="transition duration-300 ease-out"
         enter-from-class="opacity-0 translate-y-2 scale-95"
@@ -12,14 +12,12 @@
         <div
           v-for="item in toasts"
           :key="item.id"
-          role="alert"
-          class="pointer-events-auto mb-2 flex items-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium shadow-lg backdrop-blur-xl"
-          :class="typeClass(item.type)"
+          :role="appearance === 'atlas' ? feedbackRole(item.type) : 'alert'"
+          class="pointer-events-auto mb-2"
+          :class="appearance === 'atlas' ? 'atlas-feedback atlas-toast max-w-full' : ['flex items-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium shadow-lg backdrop-blur-xl', typeClass(item.type)]"
         >
-          <Check v-if="item.type === 'success'" class="h-4 w-4 shrink-0" />
-          <X v-else-if="item.type === 'error'" class="h-4 w-4 shrink-0" />
-          <Info v-else class="h-4 w-4 shrink-0" />
-          <span class="flex-1">{{ item.message }}</span>
+          <component :is="item.type === 'success' ? Check : (item.type === 'error' ? (appearance === 'atlas' ? CircleX : X) : Info)" class="h-4 w-4 shrink-0" :class="appearance === 'atlas' ? ['atlas-feedback-icon', feedbackIconClass(item.type)] : ''" aria-hidden="true" />
+          <span class="flex-1" :class="appearance === 'atlas' ? 'atlas-feedback-message' : ''">{{ item.message }}</span>
           <button
             v-if="item.action"
             class="ml-2 shrink-0 rounded-lg px-2.5 py-1 text-xs font-bold underline underline-offset-2 transition-colors hover:opacity-80"
@@ -34,8 +32,11 @@
 </template>
 
 <script setup lang="ts">
-import { Check, X, Info } from 'lucide-vue-next'
+import { Check, CircleX, X, Info } from 'lucide-vue-next'
 import { useToast, type ToastItem } from '../composables/useToast'
+import { feedbackIconClass, feedbackRole } from '../utils/feedback'
+
+withDefaults(defineProps<{ appearance?: 'atlas' | 'default' }>(), { appearance: 'default' })
 
 const { toasts, removeToast } = useToast()
 

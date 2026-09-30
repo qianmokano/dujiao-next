@@ -1,4 +1,4 @@
-export const copyText = async (value: string): Promise<void> => {
+export const copyText = async (value: string, options?: { requireSuccess?: boolean }): Promise<void> => {
   if (navigator?.clipboard?.writeText) {
     await navigator.clipboard.writeText(value)
     return
@@ -11,7 +11,8 @@ export const copyText = async (value: string): Promise<void> => {
   textarea.focus()
   textarea.select()
   try {
-    document.execCommand('copy')
+    const copied = document.execCommand('copy')
+    if (options?.requireSuccess && !copied) throw new Error('Copy failed')
   } finally {
     document.body.removeChild(textarea)
   }

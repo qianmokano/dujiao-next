@@ -1,4 +1,6 @@
-export type PageAlertLevel = 'success' | 'error' | 'warning'
+import type { FeedbackLevel } from './feedback'
+
+export type PageAlertLevel = FeedbackLevel
 
 export interface PageAlert {
   level: PageAlertLevel
