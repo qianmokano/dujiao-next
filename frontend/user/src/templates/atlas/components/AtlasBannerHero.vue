@@ -35,7 +35,7 @@
           />
           <div class="atlas-banner-copy relative">
             <h1 class="line-clamp-2 break-words font-bold leading-[1.15] tracking-[-0.025em]">{{ title }}</h1>
-            <p class="mt-3 line-clamp-2 break-words text-[15px] leading-relaxed" :class="imageUrl ? 'text-[#62656d]' : 'text-muted-foreground'">{{ subtitle }}</p>
+            <p class="mt-3 line-clamp-2 break-words text-[18px] leading-relaxed md:text-[clamp(18px,2.6vw,30px)]" :class="imageUrl ? 'text-[#62656d]' : 'text-muted-foreground'">{{ subtitle }}</p>
             <button
               type="button"
               class="mt-6 inline-flex min-h-11 items-center justify-center gap-3 rounded-full px-6 py-2.5 text-[14.5px] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 motion-reduce:transition-none"
