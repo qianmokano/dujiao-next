@@ -1,6 +1,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserAuthStore } from '../stores/userAuth'
+import { userAuthAPI } from '../api'
 import { useI18n } from 'vue-i18n'
 import { useFeedback } from './useFeedback'
 import { debounceAsync } from '../utils/debounce'
@@ -49,6 +50,7 @@ export function useRegister() {
   const sendCodeCaptchaEnabled = computed(() => !!captchaConfig.value?.scenes?.register_send_code && captchaProvider.value !== 'none')
   const turnstileSiteKey = computed(() => String(captchaConfig.value?.turnstile?.site_key || ''))
   const registrationEnabled = computed(() => appStore.config?.registration_enabled !== false)
+  const ssoOnlyMode = computed(() => !!(appStore.config as any)?.oidc_auth?.enabled)
   const emailVerificationEnabled = computed(() => appStore.config?.email_verification_enabled !== false)
   const emailDomainAllowlistEnabled = computed(() => appStore.config?.email_domain_allowlist_enabled === true)
   const allowedEmailDomains = computed(() => {
@@ -68,7 +70,7 @@ export function useRegister() {
     return domains
   })
   const allowedEmailDomainsText = computed(() => allowedEmailDomains.value.join(', '))
-  const emailDomainSelectionRequired = computed(() => emailDomainAllowlistEnabled.value && allowedEmailDomains.value.length > 0)
+  const emailDomainSelectionRequired = computed(() => !ssoOnlyMode.value && emailDomainAllowlistEnabled.value && allowedEmailDomains.value.length > 0)
 
   watch(allowedEmailDomains, (domains) => {
     if (domains.length === 0) {
@@ -176,11 +178,15 @@ export function useRegister() {
 
     sending.value = true
     try {
-      await userAuthStore.sendVerifyCode({
-        email: currentEmail,
-        purpose: 'register',
-        captcha_payload: getCaptchaPayload(),
-      })
+      if (ssoOnlyMode.value) {
+        await userAuthAPI.oidcRegisterSendCode({ email: currentEmail })
+      } else {
+        await userAuthStore.sendVerifyCode({
+          email: currentEmail,
+          purpose: 'register',
+          captcha_payload: getCaptchaPayload(),
+        })
+      }
       startCountdown()
       notifySuccess(t('auth.common.codeSent'))
     } catch (err: any) {
@@ -207,12 +213,20 @@ export function useRegister() {
       return
     }
     try {
-      await userAuthStore.register({
-        email: currentEmail,
-        password: password.value,
-        code: emailVerificationEnabled.value ? code.value : '',
-        agreement_accepted: agreed.value,
-      })
+      if (ssoOnlyMode.value) {
+        await userAuthStore.oidcRegister({
+          email: currentEmail,
+          password: password.value,
+          code: code.value,
+        })
+      } else {
+        await userAuthStore.register({
+          email: currentEmail,
+          password: password.value,
+          code: emailVerificationEnabled.value ? code.value : '',
+          agreement_accepted: agreed.value,
+        })
+      }
       router.push('/me/orders')
     } catch (err: any) {
       error.value = err.message || t('auth.register.errors.registerFailed')
@@ -227,6 +241,7 @@ export function useRegister() {
   })
 
   return {
+    ssoOnlyMode,
     userAuthStore,
     brandSiteName,
     email,

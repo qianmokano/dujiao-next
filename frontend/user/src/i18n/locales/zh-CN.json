@@ -1029,7 +1029,23 @@
       },
       "oidcButton": "统一登录",
       "oidcHint": "使用单点登录账号继续",
-      "oidcLoginFailed": "单点登录发起失败，请稍后重试"
+      "oidcLoginFailed": "单点登录发起失败，请稍后重试",
+      "ssoMfa": {
+        "title": "两步验证",
+        "subtitle": "请输入统一账号的两步验证码",
+        "methodLabel": "验证方式",
+        "codeLabel": "验证码",
+        "codePlaceholder": "输入 6 位验证码",
+        "codeRequired": "请输入验证码",
+        "submit": "验证并登录",
+        "back": "返回重新登录",
+        "failed": "两步验证失败，请重试",
+        "types": {
+          "otp": "动态验证码",
+          "email": "邮箱验证码",
+          "sms": "短信验证码"
+        }
+      }
     },
     "telegramCallback": {
       "processing": "正在处理 Telegram 登录…",

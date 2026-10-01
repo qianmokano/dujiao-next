@@ -81,6 +81,9 @@ oidc_auth:
   client_secret: ""  # IdP 分配的 Client Secret（敏感）
   redirect_uri: ""   # 形如 https://你的商城域名/auth/oidc/callback
   display_name: ""   # 登录按钮文案（默认"统一登录"）
+  # 页内直连（免跳转登录/注册）所需：Casdoor 应用标识与组织
+  application_id: "" # 形如 admin/dujiao-store（owner/应用名）
+  organization: ""   # 形如 kano
 
 redis:
   enabled: true

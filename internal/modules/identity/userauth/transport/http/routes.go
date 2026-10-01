@@ -130,12 +130,16 @@ func RegisterUserGoogleAuthRoutes(auth gin.IRoutes, handler *UserGoogleHandler, 
 }
 
 // RegisterUserOIDCAuthRoutes 注册公开通用 OIDC 登录端点（需附带限流中间件）。
-func RegisterUserOIDCAuthRoutes(auth gin.IRoutes, handler *UserOIDCHandler, rateLimit gin.HandlerFunc) {
-	if auth == nil || handler == nil || rateLimit == nil {
+func RegisterUserOIDCAuthRoutes(auth gin.IRoutes, handler *UserOIDCHandler, rateLimit gin.HandlerFunc, emailRateLimit gin.HandlerFunc) {
+	if auth == nil || handler == nil || rateLimit == nil || emailRateLimit == nil {
 		panic("user oidc auth routes: required dependency is nil")
 	}
 	auth.GET("/oidc/start", rateLimit, handler.StartOIDCLogin)
 	auth.POST("/oidc/callback", rateLimit, handler.OIDCLoginCallback)
+	auth.POST("/oidc/password-login", emailRateLimit, handler.OIDCPasswordLogin)
+	auth.POST("/oidc/mfa", rateLimit, handler.OIDCMFAComplete)
+	auth.POST("/oidc/register/send-code", emailRateLimit, handler.OIDCRegisterSendCode)
+	auth.POST("/oidc/register", emailRateLimit, handler.OIDCRegister)
 }
 
 // RegisterUserOIDCRoutes 注册登录态通用 OIDC 绑定端点。

@@ -69,6 +69,10 @@ type Service struct {
 	oidcStateSet  OIDCStateSetFunc
 	oidcStateTake OIDCStateTakeFunc
 
+	mfaChallengeSet MFAChallengeSetFunc
+	mfaChallengeGet MFAChallengeGetFunc
+	mfaChallengeDel MFAChallengeDelFunc
+
 	discoveryMu        sync.Mutex
 	discovery          *oidcDiscoveryDocument
 	discoveryFetchedAt time.Time

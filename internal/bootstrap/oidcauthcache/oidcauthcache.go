@@ -12,6 +12,7 @@ func Options() []oidcauthapp.Option {
 	return []oidcauthapp.Option{
 		oidcauthapp.WithReplaySetNX(cache.SetNX),
 		oidcauthapp.WithOIDCStateStore(setOIDCState, takeOIDCState),
+		oidcauthapp.WithMFAChallengeStore(setMFAChallenge, getMFAChallenge, delMFAChallenge),
 	}
 }
 
@@ -29,4 +30,23 @@ func takeOIDCState(ctx context.Context, key string) (string, bool, error) {
 	}
 	_ = cache.Del(ctx, key)
 	return value, true, nil
+}
+
+func setMFAChallenge(ctx context.Context, key string, value string, ttlSeconds int) (bool, error) {
+	return cache.SetNX(ctx, key, value, time.Duration(ttlSeconds)*time.Second)
+}
+
+func getMFAChallenge(ctx context.Context, key string) (string, bool, error) {
+	value, err := cache.GetString(ctx, key)
+	if err != nil {
+		return "", false, err
+	}
+	if value == "" {
+		return "", false, nil
+	}
+	return value, true, nil
+}
+
+func delMFAChallenge(ctx context.Context, key string) error {
+	return cache.Del(ctx, key)
 }

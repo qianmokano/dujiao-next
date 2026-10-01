@@ -126,6 +126,9 @@ type OIDCAuthConfig struct {
 	ClientSecret string `mapstructure:"client_secret"` // OIDC Client Secret（敏感）
 	RedirectURI  string `mapstructure:"redirect_uri"`  // 形如 https://shop.example.com/auth/oidc/callback
 	DisplayName  string `mapstructure:"display_name"`  // 登录按钮展示名，空则用前端默认文案
+	// 页内直连(免跳转)所需:Casdoor 应用标识与组织名
+	ApplicationID string `mapstructure:"application_id"` // owner/name,如 admin/dujiao-store
+	Organization  string `mapstructure:"organization"`   // 如 kano
 }
 
 // RedisConfig Redis 配置

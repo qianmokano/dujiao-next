@@ -110,7 +110,12 @@ func registerStorefrontRoutes(
 		userauthtransport.RegisterUserTelegramAuthRoutes(auth, userTelegramHandler, middleware.RateLimitMiddleware(redisClient, loginRule, middleware.KeyByIP))
 		userauthtransport.RegisterUserTelegramOIDCAuthRoutes(auth, userTelegramOIDCHandler, middleware.RateLimitMiddleware(redisClient, loginRule, middleware.KeyByIP))
 		userauthtransport.RegisterUserGoogleAuthRoutes(auth, userGoogleHandler, middleware.RateLimitMiddleware(redisClient, loginRule, middleware.KeyByIP))
-		userauthtransport.RegisterUserOIDCAuthRoutes(auth, userOIDCHandler, middleware.RateLimitMiddleware(redisClient, loginRule, middleware.KeyByIP))
+		userauthtransport.RegisterUserOIDCAuthRoutes(
+			auth,
+			userOIDCHandler,
+			middleware.RateLimitMiddleware(redisClient, loginRule, middleware.KeyByIP),
+			middleware.RateLimitMiddleware(redisClient, loginRule, middleware.KeyByIPAndJSONField("email")),
+		)
 		userauthtransport.RegisterUserPasswordAuthRoutes(auth, userPasswordHandler)
 	}
 

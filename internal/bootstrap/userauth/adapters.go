@@ -459,6 +459,76 @@ func (a userOIDCTransportAdapter) UnbindOIDC(ctx context.Context, userID uint) e
 	return mapUserAuthTransportError(a.auth.UnbindOIDC(userID))
 }
 
+func (a userOIDCTransportAdapter) LoginWithOIDCPassword(ctx context.Context, account, password string) (*userauthtransport.AuthLoginResult, *userauthtransport.OIDCMFAChallengeView, error) {
+	res, err := a.auth.LoginWithOIDCPassword(userauthapp.OIDCPasswordLoginInput{
+		Account:  account,
+		Password: password,
+		Context:  ctx,
+	})
+	if err != nil {
+		return nil, nil, mapUserAuthTransportError(err)
+	}
+	if res.Challenge != nil {
+		props := make([]userauthtransport.OIDCMFAPropView, 0, len(res.Challenge.Props))
+		for _, p := range res.Challenge.Props {
+			props = append(props, userauthtransport.OIDCMFAPropView{MfaType: p.MfaType})
+		}
+		return nil, &userauthtransport.OIDCMFAChallengeView{Token: res.Challenge.Token, Props: props}, nil
+	}
+	if res.Login == nil {
+		return nil, nil, nil
+	}
+	return toAuthLoginResult(res.Login), nil, nil
+}
+
+func (a userOIDCTransportAdapter) CompleteOIDCMFA(ctx context.Context, challenge, mfaType, passcode string) (*userauthtransport.AuthLoginResult, error) {
+	res, err := a.auth.CompleteOIDCMFA(userauthapp.OIDCMFAInput{
+		Challenge: challenge,
+		MfaType:   mfaType,
+		Passcode:  passcode,
+		Context:   ctx,
+	})
+	if err != nil {
+		return nil, mapUserAuthTransportError(err)
+	}
+	return toAuthLoginResult(res), nil
+}
+
+func (a userOIDCTransportAdapter) SendOIDCRegisterCode(ctx context.Context, email string) error {
+	return mapUserAuthTransportError(a.auth.SendOIDCRegisterCode(userauthapp.OIDCRegisterCodeInput{
+		Email:   email,
+		Context: ctx,
+	}))
+}
+
+func (a userOIDCTransportAdapter) RegisterWithOIDC(ctx context.Context, email, password, code, displayName string) (*userauthtransport.AuthLoginResult, error) {
+	res, err := a.auth.RegisterWithOIDC(userauthapp.OIDCRegisterInput{
+		Email:       email,
+		Password:    password,
+		Code:        code,
+		DisplayName: displayName,
+		Context:     ctx,
+	})
+	if err != nil {
+		return nil, mapUserAuthTransportError(err)
+	}
+	return toAuthLoginResult(res), nil
+}
+
+func toAuthLoginResult(res *userauthapp.UserLoginResult) *userauthtransport.AuthLoginResult {
+	if res == nil {
+		return nil
+	}
+	return &userauthtransport.AuthLoginResult{
+		RequiresTOTP:       res.RequiresTOTP,
+		User:               res.User,
+		Token:              res.Token,
+		ExpiresAt:          res.ExpiresAt,
+		ChallengeToken:     res.ChallengeToken,
+		ChallengeExpiresAt: res.ChallengeExpiresAt,
+	}
+}
+
 // userLoginTransportAdapter 将设置/认证服务适配为注册登录 transport 端口。
 type userLoginTransportAdapter struct {
 	auth     *userauthapp.Service

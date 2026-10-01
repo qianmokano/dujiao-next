@@ -3202,6 +3202,10 @@ const messages = {
           displayName: '登录按钮文案',
           displayNamePlaceholder: '例如：统一登录（留空使用默认文案）',
           emailHint: '登录默认信任 IdP 下发的邮箱：同邮箱的存量账号会在首次单点登录时自动关联；新用户自动注册。若 IdP 非自有部署，请先确认其邮箱可信。',
+          applicationID: 'Application ID',
+          applicationIDHint: '页内直连（免跳转登录/注册）所需：owner/应用名，如 admin/dujiao-store。',
+          organization: '组织名',
+          organizationHint: '页内直连所需：用户所属组织，如 kano。',
         },
         notification: {
           title: '通知中心',
@@ -7671,6 +7675,10 @@ const messages = {
           displayName: '登入按鈕文案',
           displayNamePlaceholder: '例如：統一登入（留空使用預設文案）',
           emailHint: '登入預設信任 IdP 下發的信箱：同信箱的存量帳號會在首次單點登入時自動關聯；新使用者自動註冊。若 IdP 非自有部署，請先確認其信箱可信。',
+          applicationID: 'Application ID',
+          applicationIDHint: '頁內直連（免跳轉登入/註冊）所需：owner/應用名，如 admin/dujiao-store。',
+          organization: '組織名',
+          organizationHint: '頁內直連所需：使用者所屬組織，如 kano。',
         },
         notification: {
           title: '通知中心',
@@ -12140,6 +12148,10 @@ const messages = {
           displayName: 'Login button label',
           displayNamePlaceholder: 'e.g. SSO Login (empty uses the default label)',
           emailHint: 'Login trusts the email claim from the IdP by default: existing accounts with the same email are linked automatically on first SSO sign-in; new users are registered automatically. Verify email trustworthiness before enabling a third-party IdP.',
+          applicationID: 'Application ID',
+          applicationIDHint: 'Required for in-page (no-redirect) sign-in/sign-up: owner/app name, e.g. admin/dujiao-store.',
+          organization: 'Organization',
+          organizationHint: 'Required for in-page sign-in: the user organization, e.g. kano.',
         },
         notification: {
           title: 'Notification Center',

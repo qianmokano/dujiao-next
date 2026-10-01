@@ -8,7 +8,7 @@
     </div>
 
     <div class="rounded-[10px] border bg-card p-6 sm:p-8">
-      <div v-if="!registrationEnabled" class="py-6 text-center">
+      <div v-if="!registrationEnabled && !ssoOnlyMode" class="py-6 text-center">
         <p class="text-[14px] text-muted-foreground">{{ t('auth.register.registrationDisabled') }}</p>
         <RouterLink to="/auth/login" class="mt-4 inline-block text-[13.5px] text-primary underline underline-offset-2">
           {{ t('auth.register.hasAccount') }}
@@ -98,7 +98,7 @@
           </div>
 
           <!-- 图形验证 -->
-          <div v-if="emailVerificationEnabled && sendCodeCaptchaEnabled">
+          <div v-if="emailVerificationEnabled && sendCodeCaptchaEnabled && !ssoOnlyMode">
             <p class="mb-2 text-[13px] font-medium text-foreground">{{ t('auth.common.captchaLabel') }}</p>
             <ImageCaptcha
               v-if="captchaProvider === 'image'"
@@ -176,6 +176,7 @@ const {
   passwordStrength, error, sending, countdown,
   captchaPayload, turnstileToken, imageCaptchaRef, turnstileRef,
   captchaProvider, sendCodeCaptchaEnabled, turnstileSiteKey,
+  ssoOnlyMode,
   registrationEnabled, emailVerificationEnabled,
   emailDomainAllowlistEnabled, allowedEmailDomains, allowedEmailDomainsText, emailDomainSelectionRequired,
   touchRegistrationEmail, formValidation, handleCaptchaConfigStale, handleSendCode, handleRegister,

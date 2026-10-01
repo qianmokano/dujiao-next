@@ -54,7 +54,38 @@
         </form>
 
         <!-- 密码登录 -->
-        <form v-else v-show="!ssoOnlyMode" class="grid gap-[18px]" @submit.prevent="handleLogin">
+        <form v-else-if="step === 'ssoMfa'" class="grid gap-[18px]" @submit.prevent="performSsoMfa">
+          <div class="text-center">
+            <h2 class="text-lg font-semibold">{{ t('auth.login.ssoMfa.title') }}</h2>
+            <p class="mt-1 text-sm text-muted-foreground">{{ t('auth.login.ssoMfa.subtitle') }}</p>
+          </div>
+          <div v-if="ssoMfaChallenge && ssoMfaChallenge.props.length > 1" class="space-y-2">
+            <label class="text-xs font-medium text-muted-foreground">{{ t('auth.login.ssoMfa.methodLabel') }}</label>
+            <select v-model="ssoMfaType" class="flex h-11 w-full rounded-full border border-input bg-transparent px-4 text-sm">
+              <option v-for="prop in ssoMfaChallenge.props" :key="prop.mfa_type" :value="prop.mfa_type">
+                {{ t(`auth.login.ssoMfa.types.${prop.mfa_type}`) !== `auth.login.ssoMfa.types.${prop.mfa_type}` ? t(`auth.login.ssoMfa.types.${prop.mfa_type}`) : prop.mfa_type }}
+              </option>
+            </select>
+          </div>
+          <FormField :label="t('auth.login.ssoMfa.codeLabel')" :error="''">
+            <template #default="{ id }">
+              <Input :id="id" v-model="ssoMfaCode" autocomplete="one-time-code" inputmode="numeric" class="h-11 rounded-full" :placeholder="t('auth.login.ssoMfa.codePlaceholder')" />
+            </template>
+          </FormField>
+          <Alert v-if="error" variant="destructive" class="text-center">
+            <AlertDescription>{{ error }}</AlertDescription>
+          </Alert>
+          <Button type="submit" :disabled="userAuthStore.loading" class="h-11 w-full rounded-full font-bold">
+            {{ userAuthStore.loading ? t('auth.login.submitting') : t('auth.login.ssoMfa.submit') }}
+          </Button>
+          <div class="text-center">
+            <Button type="button" variant="link" class="h-auto p-0 text-xs font-normal text-muted-foreground hover:text-foreground hover:no-underline" @click="cancelSsoMfa">
+              {{ t('auth.login.ssoMfa.back') }}
+            </Button>
+          </div>
+        </form>
+
+        <form v-else class="grid gap-[18px]" @submit.prevent="handleLogin">
           <FormField :label="t('auth.login.emailLabel')" :error="formValidation.getError('email')">
             <template #icon><Mail class="h-3.5 w-3.5" aria-hidden="true" /></template>
             <template #default="{ id, hasError, describedBy }">
@@ -137,7 +168,7 @@
             <AlertDescription>{{ error }}</AlertDescription>
           </Alert>
 
-          <Button v-if="!ssoOnlyMode" type="submit" :disabled="userAuthStore.loading" class="h-11 w-full rounded-full font-bold">
+          <Button type="submit" :disabled="userAuthStore.loading" class="h-11 w-full rounded-full font-bold">
             <LogIn v-if="!userAuthStore.loading" class="h-4 w-4" />
             {{ userAuthStore.loading ? t('auth.login.submitting') : t('auth.login.submit') }}
           </Button>
@@ -186,7 +217,7 @@
         </form>
       </Card>
 
-      <div v-if="registrationEnabled && !ssoOnlyMode" class="mt-4 text-center">
+      <div v-if="registrationEnabled || ssoOnlyMode" class="mt-4 text-center">
         <RouterLink to="/auth/register" class="text-sm text-muted-foreground transition-colors hover:text-foreground">{{ t('auth.login.noAccount') }}</RouterLink>
       </div>
     </div>
@@ -222,6 +253,7 @@ const {
   googleClientID, googleButtonLocale, googleIdentityUXMode, googleRedirectLoginURI,
   prepareGoogleRedirectLogin, showGoogleLogin, showThirdPartyLogin,
   showOidcLogin, oidcDisplayName, startOidcLogin, ssoOnlyMode,
+  ssoMfaChallenge, ssoMfaType, ssoMfaCode, performSsoMfa, cancelSsoMfa,
   handleGoogleCredential, handleGoogleScriptError,
   handleLogin,
 } = useLogin()

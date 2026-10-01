@@ -14,7 +14,7 @@
       </div>
 
       <Card class="rounded-3xl p-7 shadow-lg backdrop-blur-sm sm:p-9">
-        <div v-if="!registrationEnabled" class="py-8 text-center">
+        <div v-if="!registrationEnabled && !ssoOnlyMode" class="py-8 text-center">
           <p class="text-sm text-muted-foreground">{{ t('auth.register.registrationDisabled') }}</p>
           <router-link to="/auth/login" class="mt-4 inline-block text-primary hover:underline text-sm font-semibold">
             {{ t('auth.register.hasAccount') }}
@@ -118,7 +118,7 @@
             </div>
           </div>
 
-          <div v-if="emailVerificationEnabled && sendCodeCaptchaEnabled">
+          <div v-if="emailVerificationEnabled && sendCodeCaptchaEnabled && !ssoOnlyMode">
             <label class="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
               <ShieldCheck class="h-3.5 w-3.5 opacity-60" />
               {{ t('auth.common.captchaLabel') }}
@@ -230,6 +230,7 @@ const {
   passwordStrength, error, sending, countdown,
   captchaPayload, turnstileToken, imageCaptchaRef, turnstileRef,
   captchaProvider, sendCodeCaptchaEnabled, turnstileSiteKey,
+  ssoOnlyMode,
   registrationEnabled, emailVerificationEnabled,
   emailDomainAllowlistEnabled, allowedEmailDomains, allowedEmailDomainsText, emailDomainSelectionRequired,
   touchRegistrationEmail, formValidation, handleCaptchaConfigStale, handleSendCode, handleRegister,

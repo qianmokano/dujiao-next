@@ -149,6 +149,36 @@ export const useUserAuthStore = defineStore('user-auth', () => {
         }
     }
 
+    const oidcPasswordLogin = async (payload: { email: string; password: string }) => {
+        loading.value = true
+        try {
+            const response = await userAuthAPI.oidcPasswordLogin(payload)
+            return response.data.data
+        } finally {
+            loading.value = false
+        }
+    }
+
+    const oidcMfaLogin = async (payload: { challenge: string; mfa_type: string; passcode: string }) => {
+        loading.value = true
+        try {
+            const response = await userAuthAPI.oidcMfa(payload)
+            return handleLoginResponse(response.data.data)
+        } finally {
+            loading.value = false
+        }
+    }
+
+    const oidcRegister = async (payload: { email: string; password: string; code: string; display_name?: string }) => {
+        loading.value = true
+        try {
+            const response = await userAuthAPI.oidcRegister(payload)
+            return handleLoginResponse(response.data.data)
+        } finally {
+            loading.value = false
+        }
+    }
+
     const oidcLogin = async (payload: { code: string; state: string }) => {
         loading.value = true
         try {
@@ -222,6 +252,9 @@ export const useUserAuthStore = defineStore('user-auth', () => {
         telegramLogin,
         telegramOidcLogin,
         oidcLogin,
+        oidcPasswordLogin,
+        oidcMfaLogin,
+        oidcRegister,
         telegramMiniAppLogin,
         googleLogin,
         googleRedirectLogin,

@@ -1076,7 +1076,23 @@
       },
       "oidcButton": "SSO Login",
       "oidcHint": "Continue with your SSO account",
-      "oidcLoginFailed": "Failed to start SSO login, please try again"
+      "oidcLoginFailed": "Failed to start SSO login, please try again",
+      "ssoMfa": {
+        "title": "Two-Factor Verification",
+        "subtitle": "Enter the two-factor code of your unified account",
+        "methodLabel": "Verification method",
+        "codeLabel": "Code",
+        "codePlaceholder": "Enter the 6-digit code",
+        "codeRequired": "Please enter the code",
+        "submit": "Verify and sign in",
+        "back": "Back to sign in",
+        "failed": "Two-factor verification failed, please retry",
+        "types": {
+          "otp": "Authenticator code",
+          "email": "Email code",
+          "sms": "SMS code"
+        }
+      }
     },
     "telegramCallback": {
       "processing": "Processing Telegram login…",
