@@ -98,6 +98,8 @@ export function useRegister() {
   }
 
   const emailDomainRule = (value: string): string | null => {
+    // SSO 模式下注册策略以 IdP 为准,本站域名白名单不适用
+    if (ssoOnlyMode.value) return null
     if (!emailDomainAllowlistEnabled.value) return null
     const domain = getEmailDomain(value)
     if (!domain) return null

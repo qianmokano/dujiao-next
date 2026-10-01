@@ -55,7 +55,7 @@
             />
             <p v-if="formValidation.hasError('email')" class="mt-1.5 text-[12.5px] text-destructive">{{ formValidation.getError('email') }}</p>
             <p v-else-if="emailDomainSelectionRequired" class="mt-1.5 text-[12.5px] text-muted-foreground">{{ t('auth.register.emailDomainSelectHint') }}</p>
-            <p v-else-if="emailDomainAllowlistEnabled" class="mt-1.5 text-[12.5px] text-muted-foreground">
+            <p v-else-if="emailDomainAllowlistEnabled && !ssoOnlyMode" class="mt-1.5 text-[12.5px] text-muted-foreground">
               {{ allowedEmailDomains.length > 0
                 ? t('auth.register.allowedEmailDomainsHint', { domains: allowedEmailDomainsText })
                 : t('auth.register.noAllowedEmailDomainsHint') }}
