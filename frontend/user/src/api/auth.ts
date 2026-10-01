@@ -18,6 +18,14 @@ export const userAuthAPI = {
     oidcStart: () => userApi.get('/auth/oidc/start'),
     oidcCallback: (data: { code: string; state: string }) =>
         userApi.post('/auth/oidc/callback', data),
+    oidcPasswordLogin: (data: { email: string; password: string }) =>
+        userApi.post('/auth/oidc/password-login', data),
+    oidcMfa: (data: { challenge: string; mfa_type: string; passcode: string }) =>
+        userApi.post('/auth/oidc/mfa', data),
+    oidcRegisterSendCode: (data: { email: string }) =>
+        userApi.post('/auth/oidc/register/send-code', data),
+    oidcRegister: (data: { email: string; password: string; code: string; display_name?: string }) =>
+        userApi.post('/auth/oidc/register', data),
     googleRedirectIntent: () =>
         userApi.post(GOOGLE_REDIRECT_API_PATHS.loginIntent, {}, { credentials: 'include' }),
     googleRedirectExchange: () =>

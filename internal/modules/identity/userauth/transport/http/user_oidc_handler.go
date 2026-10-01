@@ -23,6 +23,21 @@ type UserOIDCService interface {
 	BindOIDC(ctx context.Context, userID uint, code, state string) (*externalidentitydomain.Identity, error)
 	GetOIDCBinding(ctx context.Context, userID uint) (canUnbind bool, identity *externalidentitydomain.Identity, err error)
 	UnbindOIDC(ctx context.Context, userID uint) error
+	LoginWithOIDCPassword(ctx context.Context, account, password string) (*AuthLoginResult, *OIDCMFAChallengeView, error)
+	CompleteOIDCMFA(ctx context.Context, challenge, mfaType, passcode string) (*AuthLoginResult, error)
+	SendOIDCRegisterCode(ctx context.Context, email string) error
+	RegisterWithOIDC(ctx context.Context, email, password, code, displayName string) (*AuthLoginResult, error)
+}
+
+// OIDCMFAChallengeView 是页内登录的 MFA 挑战视图。
+type OIDCMFAChallengeView struct {
+	Token string            `json:"token"`
+	Props []OIDCMFAPropView `json:"props"`
+}
+
+// OIDCMFAPropView 是一种可选的二步验证方式。
+type OIDCMFAPropView struct {
+	MfaType string `json:"mfa_type"`
 }
 
 // UserOIDCHandler 处理通用 OIDC 登录与绑定 HTTP 请求。
@@ -67,6 +82,24 @@ func respondOIDCError(c *gin.Context, err error) {
 		ginutil.RespondError(c, response.CodeBadRequest, "error.oidc_already_bound", nil)
 	case errors.Is(err, ErrOIDCUnbindRequiresLocalLogin):
 		ginutil.RespondError(c, response.CodeBadRequest, "error.oidc_unbind_requires_local_login", nil)
+	case errors.Is(err, oidcauthapp.ErrOIDCInvalidCredentials):
+		ginutil.RespondError(c, response.CodeBadRequest, "error.oidc_invalid_credentials", nil)
+	case errors.Is(err, oidcauthapp.ErrOIDCAccountFrozen):
+		ginutil.RespondError(c, response.CodeTooManyRequests, "error.oidc_account_frozen", nil)
+	case errors.Is(err, oidcauthapp.ErrOIDCCaptchaRequired):
+		ginutil.RespondError(c, response.CodeBadRequest, "error.oidc_captcha_required", nil)
+	case errors.Is(err, oidcauthapp.ErrOIDCMFAChallengeInvalid):
+		ginutil.RespondError(c, response.CodeBadRequest, "error.oidc_mfa_challenge_invalid", nil)
+	case errors.Is(err, oidcauthapp.ErrOIDCMFACodeInvalid):
+		ginutil.RespondError(c, response.CodeBadRequest, "error.oidc_mfa_code_invalid", nil)
+	case errors.Is(err, oidcauthapp.ErrOIDCCodeInvalid):
+		ginutil.RespondError(c, response.CodeBadRequest, "error.oidc_code_invalid", nil)
+	case errors.Is(err, oidcauthapp.ErrOIDCEmailExists):
+		ginutil.RespondError(c, response.CodeBadRequest, "error.oidc_email_exists", nil)
+	case errors.Is(err, oidcauthapp.ErrOIDCCodeResendWait):
+		ginutil.RespondError(c, response.CodeBadRequest, "error.oidc_code_resend_wait", nil)
+	case errors.Is(err, oidcauthapp.ErrOIDCRemoteRejected):
+		ginutil.RespondError(c, response.CodeInternal, "error.oidc_remote_rejected", err)
 	case errors.Is(err, ErrUserDisabled):
 		ginutil.RespondError(c, response.CodeUnauthorized, "error.user_disabled", nil)
 	case errors.Is(err, ErrRegistrationDisabled):
@@ -189,4 +222,126 @@ func (h *UserOIDCHandler) UnbindMyOIDC(c *gin.Context) {
 		return
 	}
 	response.Success(c, gin.H{"unbound": true})
+}
+
+type oidcPasswordLoginRequest struct {
+	Email    string `json:"email" binding:"required"`
+	Password string `json:"password" binding:"required"`
+}
+
+// OIDCPasswordLogin 页内直连登录(凭据由后端代理交 IdP 校验)。
+func (h *UserOIDCHandler) OIDCPasswordLogin(c *gin.Context) {
+	var req oidcPasswordLoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.recordLogin(c, "", 0, constants.LoginLogStatusFailed, constants.LoginLogFailReasonBadRequest, constants.LoginLogSourceOIDC)
+		ginutil.RespondError(c, response.CodeBadRequest, "error.bad_request", err)
+		return
+	}
+	res, challenge, err := h.service.LoginWithOIDCPassword(c.Request.Context(), req.Email, req.Password)
+	if err != nil {
+		h.recordLogin(c, req.Email, 0, constants.LoginLogStatusFailed, constants.LoginLogFailReasonOIDCInvalid, constants.LoginLogSourceOIDC)
+		respondOIDCError(c, err)
+		return
+	}
+	if challenge != nil {
+		props := make([]OIDCMFAPropView, 0, len(challenge.Props))
+		for _, p := range challenge.Props {
+			props = append(props, OIDCMFAPropView{MfaType: p.MfaType})
+		}
+		h.recordLogin(c, req.Email, 0, constants.LoginLogStatusFailed, constants.LoginLogPasswordOK2FAPending, constants.LoginLogSourceOIDC)
+		response.Success(c, gin.H{
+			"requires_mfa": true,
+			"mfa_challenge": gin.H{
+				"token": challenge.Token,
+				"props": props,
+			},
+		})
+		return
+	}
+	h.recordLogin(c, res.User.Email, res.User.ID, constants.LoginLogStatusSuccess, "", constants.LoginLogSourceOIDC)
+	response.Success(c, gin.H{
+		"requires_mfa":         false,
+		"requires_totp":        res.RequiresTOTP,
+		"user":                 userpresenter.NewUserAuthBriefResp(res.User),
+		"token":                res.Token,
+		"expires_at":           res.ExpiresAt.Format("2006-01-02T15:04:05Z07:00"),
+		"challenge_token":      res.ChallengeToken,
+		"challenge_expires_at": res.ChallengeExpiresAt.Format("2006-01-02T15:04:05Z07:00"),
+	})
+}
+
+type oidcMFARequest struct {
+	Challenge string `json:"challenge" binding:"required"`
+	MfaType   string `json:"mfa_type" binding:"required"`
+	Passcode  string `json:"passcode" binding:"required"`
+}
+
+// OIDCMFAComplete 续接页内登录的 MFA 二步验证。
+func (h *UserOIDCHandler) OIDCMFAComplete(c *gin.Context) {
+	var req oidcMFARequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		ginutil.RespondBindError(c, err)
+		return
+	}
+	res, err := h.service.CompleteOIDCMFA(c.Request.Context(), req.Challenge, req.MfaType, req.Passcode)
+	if err != nil {
+		h.recordLogin(c, "", 0, constants.LoginLogStatusFailed, constants.LoginLogFailReasonOIDCInvalid, constants.LoginLogSourceOIDC)
+		respondOIDCError(c, err)
+		return
+	}
+	h.recordLogin(c, res.User.Email, res.User.ID, constants.LoginLogStatusSuccess, "", constants.LoginLogSourceOIDC)
+	response.Success(c, gin.H{
+		"requires_totp":        res.RequiresTOTP,
+		"user":                 userpresenter.NewUserAuthBriefResp(res.User),
+		"token":                res.Token,
+		"expires_at":           res.ExpiresAt.Format("2006-01-02T15:04:05Z07:00"),
+		"challenge_token":      res.ChallengeToken,
+		"challenge_expires_at": res.ChallengeExpiresAt.Format("2006-01-02T15:04:05Z07:00"),
+	})
+}
+
+type oidcRegisterCodeRequest struct {
+	Email string `json:"email" binding:"required"`
+}
+
+// OIDCRegisterSendCode 页内注册:发送邮箱验证码(经 IdP)。
+func (h *UserOIDCHandler) OIDCRegisterSendCode(c *gin.Context) {
+	var req oidcRegisterCodeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		ginutil.RespondBindError(c, err)
+		return
+	}
+	if err := h.service.SendOIDCRegisterCode(c.Request.Context(), req.Email); err != nil {
+		respondOIDCError(c, err)
+		return
+	}
+	response.Success(c, gin.H{"sent": true})
+}
+
+type oidcRegisterRequest struct {
+	Email       string `json:"email" binding:"required"`
+	Password    string `json:"password" binding:"required"`
+	Code        string `json:"code" binding:"required"`
+	DisplayName string `json:"display_name"`
+}
+
+// OIDCRegister 页内注册:IdP 完成邮箱验证码开户并即时登录。
+func (h *UserOIDCHandler) OIDCRegister(c *gin.Context) {
+	var req oidcRegisterRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		ginutil.RespondBindError(c, err)
+		return
+	}
+	res, err := h.service.RegisterWithOIDC(c.Request.Context(), req.Email, req.Password, req.Code, req.DisplayName)
+	if err != nil {
+		h.recordLogin(c, req.Email, 0, constants.LoginLogStatusFailed, constants.LoginLogFailReasonOIDCInvalid, constants.LoginLogSourceOIDC)
+		respondOIDCError(c, err)
+		return
+	}
+	h.recordLogin(c, res.User.Email, res.User.ID, constants.LoginLogStatusSuccess, "", constants.LoginLogSourceOIDC)
+	response.Success(c, gin.H{
+		"user":       userpresenter.NewUserAuthBriefResp(res.User),
+		"token":      res.Token,
+		"expires_at": res.ExpiresAt.Format("2006-01-02T15:04:05Z07:00"),
+	})
 }

@@ -1076,7 +1076,23 @@
       },
       "oidcButton": "統一登入",
       "oidcHint": "使用單點登入帳號繼續",
-      "oidcLoginFailed": "單點登入發起失敗，請稍後重試"
+      "oidcLoginFailed": "單點登入發起失敗，請稍後重試",
+      "ssoMfa": {
+        "title": "兩步驗證",
+        "subtitle": "請輸入統一帳號的兩步驗證碼",
+        "methodLabel": "驗證方式",
+        "codeLabel": "驗證碼",
+        "codePlaceholder": "輸入 6 位驗證碼",
+        "codeRequired": "請輸入驗證碼",
+        "submit": "驗證並登入",
+        "back": "返回重新登入",
+        "failed": "兩步驗證失敗，請重試",
+        "types": {
+          "otp": "動態驗證碼",
+          "email": "信箱驗證碼",
+          "sms": "簡訊驗證碼"
+        }
+      }
     },
     "telegramCallback": {
       "processing": "正在處理 Telegram 登入…",

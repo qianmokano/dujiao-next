@@ -13,6 +13,10 @@ const PUBLIC_AUTH_ENDPOINTS = new Set([
   GOOGLE_REDIRECT_API_PATHS.loginIntent,
   GOOGLE_REDIRECT_API_PATHS.loginExchange,
   '/auth/forgot-password',
+  '/auth/oidc/password-login',
+  '/auth/oidc/mfa',
+  '/auth/oidc/register/send-code',
+  '/auth/oidc/register',
 ])
 
 export const isPublicAuthEndpoint = (url: unknown): boolean => {

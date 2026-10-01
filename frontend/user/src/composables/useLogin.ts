@@ -51,9 +51,12 @@ export function useLogin() {
     route.query.google2fa,
     userAuthStore.challengeToken,
   )
-  const step = ref<'password' | 'totp'>(
+  const step = ref<'password' | 'totp' | 'ssoMfa'>(
     resumeGoogleRedirect2FAOnMount ? 'totp' : 'password',
   )
+  const ssoMfaChallenge = ref<{ token: string; props: Array<{ mfa_type: string }> } | null>(null)
+  const ssoMfaType = ref('')
+  const ssoMfaCode = ref('')
   const totpMode = ref<'code' | 'recovery'>('code')
   const totpCode = ref('')
   const recoveryCode = ref('')
@@ -175,6 +178,25 @@ export function useLogin() {
     }
 
     try {
+      if (ssoOnlyMode.value) {
+        const data = await userAuthStore.oidcPasswordLogin({
+          email: email.value,
+          password: password.value,
+        })
+        if (data?.requires_mfa && data?.mfa_challenge) {
+          ssoMfaChallenge.value = data.mfa_challenge
+          ssoMfaType.value = data.mfa_challenge.props?.[0]?.mfa_type || 'otp'
+          ssoMfaCode.value = ''
+          step.value = 'ssoMfa'
+          return
+        }
+        if (data?.requires_totp) {
+          enter2FAStep()
+          return
+        }
+        await redirectAfterLogin()
+        return
+      }
       const result = await userAuthStore.login({
         email: email.value,
         password: password.value,
@@ -408,6 +430,32 @@ export function useLogin() {
     }
   }
 
+  const performSsoMfa = async () => {
+    if (!ssoMfaChallenge.value) return
+    error.value = ''
+    if (!ssoMfaCode.value.trim()) {
+      error.value = t('auth.login.ssoMfa.codeRequired')
+      return
+    }
+    try {
+      await userAuthStore.oidcMfaLogin({
+        challenge: ssoMfaChallenge.value.token,
+        mfa_type: ssoMfaType.value,
+        passcode: ssoMfaCode.value.trim(),
+      })
+      await redirectAfterLogin()
+    } catch (err: any) {
+      error.value = err?.message || t('auth.login.ssoMfa.failed')
+    }
+  }
+
+  const cancelSsoMfa = () => {
+    step.value = 'password'
+    ssoMfaChallenge.value = null
+    ssoMfaCode.value = ''
+    error.value = ''
+  }
+
   const startOidcLogin = async () => {
     error.value = ''
     try {
@@ -460,18 +508,6 @@ export function useLogin() {
     win[telegramCallbackName] = handleTelegramAuth
     renderTelegramWidget()
 
-    if (ssoOnlyMode.value) {
-      const resumeTg2FA = route.query.tg2fa === '1' && userAuthStore.challengeToken
-      const resumeGo2FA = shouldResumeGoogleRedirect2FA(
-        route.query.google2fa,
-        userAuthStore.challengeToken,
-      )
-      const resumeOidc2FA = route.query.oidc2fa === '1' && userAuthStore.challengeToken
-      if (!resumeTg2FA && !resumeGo2FA && !resumeOidc2FA && !isTelegramMiniApp.value) {
-        await startOidcLogin()
-        return
-      }
-    }
 
     const resumeTelegram2FA = route.query.tg2fa === '1' && userAuthStore.challengeToken
     const resumeGoogle2FA = shouldResumeGoogleRedirect2FA(
@@ -553,6 +589,7 @@ export function useLogin() {
     showTelegramOidc,
     startTelegramOidc,
     showOidcLogin, oidcDisplayName, startOidcLogin, ssoOnlyMode, isLocalEscape,
+    ssoMfaChallenge, ssoMfaType, ssoMfaCode, performSsoMfa, cancelSsoMfa,
     showMiniAppLoginHint,
     attemptingMiniAppLogin,
     showTelegramMiniAppEntry,

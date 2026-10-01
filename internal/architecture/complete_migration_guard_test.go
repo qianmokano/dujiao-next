@@ -18,6 +18,8 @@ type packageFileBudget struct {
 // reuse AST helpers. Production packages have no file-budget exceptions.
 var packageFileBudgetOverrides = map[string]packageFileBudget{
 	"internal/architecture": {production: 0, total: 51},
+	// 通用 OIDC 切片含页内直连(密码登录/MFA/注册代理)编排文件
+	"internal/modules/identity/userauth/application": {production: 13, total: 21},
 }
 
 // completedMigrationPaths are deleted compatibility-free entry points. Once a

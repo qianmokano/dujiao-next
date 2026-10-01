@@ -17,10 +17,10 @@
         <div class="mb-8 text-center">
           <p class="text-xs font-semibold uppercase tracking-[0.22em] text-primary">{{ brandSiteName }}</p>
           <h1 class="mt-3 text-3xl font-black text-foreground">
-            {{ step === 'totp' ? t('auth.login.totp.title') : t('auth.login.title') }}
+            {{ step === 'totp' ? t('auth.login.totp.title') : (step === 'ssoMfa' ? t('auth.login.ssoMfa.title') : t('auth.login.title')) }}
           </h1>
           <p class="mt-2 text-sm text-muted-foreground">
-            {{ step === 'totp' ? t('auth.login.totp.subtitle') : t('auth.login.subtitle') }}
+            {{ step === 'totp' ? t('auth.login.totp.subtitle') : (step === 'ssoMfa' ? t('auth.login.ssoMfa.subtitle') : t('auth.login.subtitle')) }}
           </p>
         </div>
 
@@ -97,11 +97,65 @@
         </form>
 
         <form
+          v-else-if="step === 'ssoMfa'"
+          class="space-y-6"
+          @submit.prevent="performSsoMfa"
+        >
+          <div class="text-center">
+            <h2 class="text-lg font-semibold">{{ t('auth.login.ssoMfa.title') }}</h2>
+            <p class="mt-1 text-sm text-muted-foreground">{{ t('auth.login.ssoMfa.subtitle') }}</p>
+          </div>
+
+          <div v-if="ssoMfaChallenge && ssoMfaChallenge.props.length > 1" class="space-y-2">
+            <label class="text-xs font-medium text-muted-foreground">{{ t('auth.login.ssoMfa.methodLabel') }}</label>
+            <select
+              v-model="ssoMfaType"
+              class="flex h-11 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm"
+            >
+              <option v-for="prop in ssoMfaChallenge.props" :key="prop.mfa_type" :value="prop.mfa_type">
+                {{ t(`auth.login.ssoMfa.types.${prop.mfa_type}`) !== `auth.login.ssoMfa.types.${prop.mfa_type}` ? t(`auth.login.ssoMfa.types.${prop.mfa_type}`) : prop.mfa_type }}
+              </option>
+            </select>
+          </div>
+
+          <FormField :label="t('auth.login.ssoMfa.codeLabel')" :error="''">
+            <template #default="{ id }">
+              <Input
+                :id="id"
+                v-model="ssoMfaCode"
+                autocomplete="one-time-code"
+                inputmode="numeric"
+                class="h-11"
+                :placeholder="t('auth.login.ssoMfa.codePlaceholder')"
+              />
+            </template>
+          </FormField>
+
+          <Alert v-if="error" variant="destructive" class="text-center">
+            <AlertDescription>{{ error }}</AlertDescription>
+          </Alert>
+
+          <Button type="submit" :disabled="userAuthStore.loading" class="h-11 w-full font-bold">
+            {{ userAuthStore.loading ? t('auth.login.submitting') : t('auth.login.ssoMfa.submit') }}
+          </Button>
+
+          <div class="text-center">
+            <Button
+              type="button"
+              variant="link"
+              class="h-auto p-0 text-xs font-normal text-muted-foreground hover:text-foreground hover:no-underline"
+              @click="cancelSsoMfa"
+            >
+              {{ t('auth.login.ssoMfa.back') }}
+            </Button>
+          </div>
+        </form>
+
+        <form
           v-else
           class="space-y-6"
           @submit.prevent="handleLogin"
         >
-          <template v-if="!ssoOnlyMode">
           <FormField
             :label="t('auth.login.emailLabel')"
             :error="formValidation.getError('email')"
@@ -159,8 +213,6 @@
             </template>
           </FormField>
 
-          </template>
-
           <div v-if="loginCaptchaEnabled && !ssoOnlyMode">
             <label class="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
               <ShieldCheck class="h-3.5 w-3.5 opacity-60" />
@@ -203,7 +255,7 @@
             <AlertDescription>{{ error }}</AlertDescription>
           </Alert>
 
-          <Button v-if="!ssoOnlyMode" type="submit" :disabled="userAuthStore.loading" class="h-11 w-full font-bold">
+          <Button type="submit" :disabled="userAuthStore.loading" class="h-11 w-full font-bold">
             <LogIn v-if="!userAuthStore.loading" class="h-4 w-4" />
             {{ userAuthStore.loading ? t('auth.login.submitting') : t('auth.login.submit') }}
           </Button>
@@ -271,7 +323,7 @@
         </form>
       </Card>
 
-      <div v-if="registrationEnabled && !ssoOnlyMode" class="mt-4 text-center">
+      <div v-if="registrationEnabled || ssoOnlyMode" class="mt-4 text-center">
         <router-link
           to="/auth/register"
           class="text-muted-foreground transition-colors hover:text-foreground text-sm"
@@ -312,6 +364,7 @@ const {
   googleClientID, googleButtonLocale, googleIdentityUXMode, googleRedirectLoginURI,
   prepareGoogleRedirectLogin, showGoogleLogin, showThirdPartyLogin,
   showOidcLogin, oidcDisplayName, startOidcLogin, ssoOnlyMode,
+  ssoMfaChallenge, ssoMfaType, ssoMfaCode, performSsoMfa, cancelSsoMfa,
   handleGoogleCredential, handleGoogleScriptError,
   handleLogin,
 } = useLogin()

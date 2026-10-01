@@ -297,6 +297,8 @@ const oidcForm = reactive({
   has_client_secret: false,
   redirect_uri: '',
   display_name: '',
+  application_id: '',
+  organization: '',
 })
 
 const createOrderEmailLocalizedTemplate = () => ({ subject: '', body: '' })
@@ -559,6 +561,8 @@ const fetchSettings = async () => {
       oidcForm.has_client_secret = !!oidc.has_client_secret
       oidcForm.redirect_uri = String(oidc.redirect_uri || '')
       oidcForm.display_name = String(oidc.display_name || '')
+      oidcForm.application_id = String(oidc.application_id || '')
+      oidcForm.organization = String(oidc.organization || '')
     }
 
     if (dashboardRes.data && dashboardRes.data.data) {
@@ -757,6 +761,8 @@ const saveOIDCAuthSettings = async () => {
     client_id: oidcForm.client_id.trim(),
     redirect_uri: oidcForm.redirect_uri.trim(),
     display_name: oidcForm.display_name.trim(),
+    application_id: oidcForm.application_id.trim(),
+    organization: oidcForm.organization.trim(),
   }
   if (oidcForm.client_secret.trim() !== '') {
     payload.client_secret = oidcForm.client_secret.trim()
@@ -770,6 +776,8 @@ const saveOIDCAuthSettings = async () => {
   oidcForm.has_client_secret = !!data?.has_client_secret
   oidcForm.redirect_uri = String(data?.redirect_uri || '')
   oidcForm.display_name = String(data?.display_name || '')
+  oidcForm.application_id = String(data?.application_id || '')
+  oidcForm.organization = String(data?.organization || '')
 }
 
 const saveDashboardSettings = async () => {
@@ -1599,6 +1607,19 @@ onMounted(() => {
             <div class="space-y-2">
               <label class="text-xs font-medium text-muted-foreground">{{ t('admin.settings.oidc.displayName') }}</label>
               <Input v-model="oidcForm.display_name" :placeholder="t('admin.settings.oidc.displayNamePlaceholder')" />
+            </div>
+
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div class="space-y-2">
+                <label class="text-xs font-medium text-muted-foreground">{{ t('admin.settings.oidc.applicationID') }}</label>
+                <Input v-model="oidcForm.application_id" placeholder="admin/dujiao-store" />
+                <p class="text-xs text-muted-foreground">{{ t('admin.settings.oidc.applicationIDHint') }}</p>
+              </div>
+              <div class="space-y-2">
+                <label class="text-xs font-medium text-muted-foreground">{{ t('admin.settings.oidc.organization') }}</label>
+                <Input v-model="oidcForm.organization" placeholder="kano" />
+                <p class="text-xs text-muted-foreground">{{ t('admin.settings.oidc.organizationHint') }}</p>
+              </div>
             </div>
 
             <div class="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-xs leading-5 text-blue-800 dark:border-blue-900/60 dark:bg-blue-950/30 dark:text-blue-200">

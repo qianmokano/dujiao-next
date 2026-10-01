@@ -21,27 +21,34 @@ type OIDCAuthSetting struct {
 	ClientSecret string `json:"client_secret"`
 	RedirectURI  string `json:"redirect_uri"`
 	DisplayName  string `json:"display_name"`
+	// 页内直连所需(登录/注册代理走 Casdoor JSON API)
+	ApplicationID string `json:"application_id"` // owner/name,如 admin/dujiao-store
+	Organization  string `json:"organization"`   // 如 kano
 }
 
 // OIDCAuthSettingPatch 通用 OIDC 配置补丁。
 type OIDCAuthSettingPatch struct {
-	Enabled      *bool   `json:"enabled"`
-	Issuer       *string `json:"issuer"`
-	ClientID     *string `json:"client_id"`
-	ClientSecret *string `json:"client_secret"`
-	RedirectURI  *string `json:"redirect_uri"`
-	DisplayName  *string `json:"display_name"`
+	Enabled       *bool   `json:"enabled"`
+	Issuer        *string `json:"issuer"`
+	ClientID      *string `json:"client_id"`
+	ClientSecret  *string `json:"client_secret"`
+	RedirectURI   *string `json:"redirect_uri"`
+	DisplayName   *string `json:"display_name"`
+	ApplicationID *string `json:"application_id"`
+	Organization  *string `json:"organization"`
 }
 
 // DefaultOIDCAuthSetting 根据运行时配置生成默认设置。
 func DefaultOIDCAuthSetting(cfg config.OIDCAuthConfig) OIDCAuthSetting {
 	return NormalizeOIDCAuthSetting(OIDCAuthSetting{
-		Enabled:      cfg.Enabled,
-		Issuer:       strings.TrimSpace(cfg.Issuer),
-		ClientID:     strings.TrimSpace(cfg.ClientID),
-		ClientSecret: strings.TrimSpace(cfg.ClientSecret),
-		RedirectURI:  strings.TrimSpace(cfg.RedirectURI),
-		DisplayName:  strings.TrimSpace(cfg.DisplayName),
+		Enabled:       cfg.Enabled,
+		Issuer:        strings.TrimSpace(cfg.Issuer),
+		ClientID:      strings.TrimSpace(cfg.ClientID),
+		ClientSecret:  strings.TrimSpace(cfg.ClientSecret),
+		ApplicationID: strings.TrimSpace(cfg.ApplicationID),
+		Organization:  strings.TrimSpace(cfg.Organization),
+		RedirectURI:   strings.TrimSpace(cfg.RedirectURI),
+		DisplayName:   strings.TrimSpace(cfg.DisplayName),
 	})
 }
 
@@ -50,6 +57,8 @@ func NormalizeOIDCAuthSetting(setting OIDCAuthSetting) OIDCAuthSetting {
 	setting.Issuer = strings.TrimRight(strings.TrimSpace(setting.Issuer), "/")
 	setting.ClientID = strings.TrimSpace(setting.ClientID)
 	setting.ClientSecret = strings.TrimSpace(setting.ClientSecret)
+	setting.ApplicationID = strings.TrimSpace(setting.ApplicationID)
+	setting.Organization = strings.TrimSpace(setting.Organization)
 	setting.RedirectURI = strings.TrimRight(strings.TrimSpace(setting.RedirectURI), "/")
 	setting.DisplayName = strings.TrimSpace(setting.DisplayName)
 	return setting
@@ -81,6 +90,12 @@ func ValidateOIDCAuthSetting(setting OIDCAuthSetting) error {
 	}
 	if err := validateOIDCHttpsURL(normalized.RedirectURI); err != nil {
 		return fmt.Errorf("%w: 回调地址 %v", ErrOIDCAuthConfigInvalid, err)
+	}
+	if !strings.Contains(normalized.ApplicationID, "/") {
+		return fmt.Errorf("%w: 页内直连需要 Application ID(形如 admin/应用名)", ErrOIDCAuthConfigInvalid)
+	}
+	if normalized.Organization == "" {
+		return fmt.Errorf("%w: 页内直连需要组织名", ErrOIDCAuthConfigInvalid)
 	}
 	return nil
 }
@@ -116,6 +131,12 @@ func ApplyOIDCAuthSettingPatch(current OIDCAuthSetting, patch OIDCAuthSettingPat
 	if patch.RedirectURI != nil {
 		next.RedirectURI = strings.TrimSpace(*patch.RedirectURI)
 	}
+	if patch.ApplicationID != nil {
+		next.ApplicationID = strings.TrimSpace(*patch.ApplicationID)
+	}
+	if patch.Organization != nil {
+		next.Organization = strings.TrimSpace(*patch.Organization)
+	}
 	if patch.DisplayName != nil {
 		next.DisplayName = strings.TrimSpace(*patch.DisplayName)
 	}
@@ -126,12 +147,14 @@ func ApplyOIDCAuthSettingPatch(current OIDCAuthSetting, patch OIDCAuthSettingPat
 func OIDCAuthSettingToConfig(setting OIDCAuthSetting) config.OIDCAuthConfig {
 	normalized := NormalizeOIDCAuthSetting(setting)
 	return config.OIDCAuthConfig{
-		Enabled:      normalized.Enabled,
-		Issuer:       normalized.Issuer,
-		ClientID:     normalized.ClientID,
-		ClientSecret: normalized.ClientSecret,
-		RedirectURI:  normalized.RedirectURI,
-		DisplayName:  normalized.DisplayName,
+		Enabled:       normalized.Enabled,
+		Issuer:        normalized.Issuer,
+		ClientID:      normalized.ClientID,
+		ClientSecret:  normalized.ClientSecret,
+		ApplicationID: normalized.ApplicationID,
+		Organization:  normalized.Organization,
+		RedirectURI:   normalized.RedirectURI,
+		DisplayName:   normalized.DisplayName,
 	}
 }
 
@@ -139,12 +162,14 @@ func OIDCAuthSettingToConfig(setting OIDCAuthSetting) config.OIDCAuthConfig {
 func EncodeOIDCAuthSetting(setting OIDCAuthSetting) jsonmap.JSON {
 	normalized := NormalizeOIDCAuthSetting(setting)
 	return jsonmap.JSON{
-		"enabled":       normalized.Enabled,
-		"issuer":        normalized.Issuer,
-		"client_id":     normalized.ClientID,
-		"client_secret": normalized.ClientSecret,
-		"redirect_uri":  normalized.RedirectURI,
-		"display_name":  normalized.DisplayName,
+		"enabled":        normalized.Enabled,
+		"issuer":         normalized.Issuer,
+		"client_id":      normalized.ClientID,
+		"client_secret":  normalized.ClientSecret,
+		"application_id": normalized.ApplicationID,
+		"organization":   normalized.Organization,
+		"redirect_uri":   normalized.RedirectURI,
+		"display_name":   normalized.DisplayName,
 	}
 }
 
@@ -157,6 +182,8 @@ func MaskOIDCAuthSettingForAdmin(setting OIDCAuthSetting) jsonmap.JSON {
 		"client_id":         normalized.ClientID,
 		"client_secret":     "",
 		"has_client_secret": normalized.ClientSecret != "",
+		"application_id":    normalized.ApplicationID,
+		"organization":      normalized.Organization,
 		"redirect_uri":      normalized.RedirectURI,
 		"display_name":      normalized.DisplayName,
 	}
@@ -172,11 +199,13 @@ func DecodeOIDCAuthSetting(raw jsonmap.JSON, fallback OIDCAuthSetting) OIDCAuthS
 		next.Enabled = settingsvalue.ParseBool(value)
 	}
 	for key, target := range map[string]*string{
-		"issuer":        &next.Issuer,
-		"client_id":     &next.ClientID,
-		"client_secret": &next.ClientSecret,
-		"redirect_uri":  &next.RedirectURI,
-		"display_name":  &next.DisplayName,
+		"issuer":         &next.Issuer,
+		"client_id":      &next.ClientID,
+		"client_secret":  &next.ClientSecret,
+		"application_id": &next.ApplicationID,
+		"organization":   &next.Organization,
+		"redirect_uri":   &next.RedirectURI,
+		"display_name":   &next.DisplayName,
 	} {
 		if value, exists := raw[key]; exists {
 			if text, ok := value.(string); ok {
