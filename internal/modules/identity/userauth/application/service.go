@@ -26,8 +26,8 @@ import (
 	emailverificationdomain "github.com/dujiao-next/internal/modules/identity/emailverification/domain"
 	externalidentitycontract "github.com/dujiao-next/internal/modules/identity/externalidentity/contract"
 	googleauthapp "github.com/dujiao-next/internal/modules/identity/googleauth/application"
-	oidcauthapp "github.com/dujiao-next/internal/modules/identity/oidcauth/application"
 	"github.com/dujiao-next/internal/modules/identity/jwttoken"
+	oidcauthapp "github.com/dujiao-next/internal/modules/identity/oidcauth/application"
 	"github.com/dujiao-next/internal/modules/identity/userauth/challenge"
 	"github.com/dujiao-next/internal/shared/mailbrand"
 
