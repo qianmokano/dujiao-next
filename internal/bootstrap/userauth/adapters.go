@@ -398,6 +398,67 @@ func (a userTelegramOIDCTransportAdapter) BindTelegramOIDC(ctx context.Context, 
 	return identity, mapUserAuthTransportError(err)
 }
 
+// userOIDCTransportAdapter 将用户认证服务适配为通用 OIDC transport 端口。
+type userOIDCTransportAdapter struct {
+	auth *userauthapp.Service
+}
+
+func (a userOIDCTransportAdapter) StartOIDC(ctx context.Context, intent string, userID uint) (string, error) {
+	authURL, err := a.auth.StartOIDC(userauthapp.StartOIDCInput{
+		Intent:  intent,
+		UserID:  userID,
+		Context: ctx,
+	})
+	return authURL, mapUserAuthTransportError(err)
+}
+
+func (a userOIDCTransportAdapter) LoginWithOIDC(ctx context.Context, code, state string) (*userauthtransport.AuthLoginResult, error) {
+	res, err := a.auth.LoginWithOIDC(userauthapp.LoginWithOIDCInput{
+		Code:    code,
+		State:   state,
+		Context: ctx,
+	})
+	if err != nil {
+		return nil, mapUserAuthTransportError(err)
+	}
+	if res == nil {
+		return nil, nil
+	}
+	return &userauthtransport.AuthLoginResult{
+		RequiresTOTP:       res.RequiresTOTP,
+		User:               res.User,
+		Token:              res.Token,
+		ExpiresAt:          res.ExpiresAt,
+		ChallengeToken:     res.ChallengeToken,
+		ChallengeExpiresAt: res.ChallengeExpiresAt,
+	}, nil
+}
+
+func (a userOIDCTransportAdapter) BindOIDC(ctx context.Context, userID uint, code, state string) (*externalidentitydomain.Identity, error) {
+	identity, err := a.auth.BindOIDC(userauthapp.BindOIDCInput{
+		UserID:  userID,
+		Code:    code,
+		State:   state,
+		Context: ctx,
+	})
+	return identity, mapUserAuthTransportError(err)
+}
+
+func (a userOIDCTransportAdapter) GetOIDCBinding(ctx context.Context, userID uint) (bool, *externalidentitydomain.Identity, error) {
+	result, err := a.auth.GetOIDCBinding(userID)
+	if err != nil {
+		return false, nil, mapUserAuthTransportError(err)
+	}
+	if result == nil {
+		return false, nil, nil
+	}
+	return result.CanUnbind, result.Identity, nil
+}
+
+func (a userOIDCTransportAdapter) UnbindOIDC(ctx context.Context, userID uint) error {
+	return mapUserAuthTransportError(a.auth.UnbindOIDC(userID))
+}
+
 // userLoginTransportAdapter 将设置/认证服务适配为注册登录 transport 端口。
 type userLoginTransportAdapter struct {
 	auth     *userauthapp.Service
@@ -667,6 +728,7 @@ func mapUserAuthTransportError(err error) error {
 		{userauthapp.ErrUserOAuthAlreadyBound, userauthtransport.ErrUserOAuthAlreadyBound},
 		{userauthapp.ErrUserOAuthNotBound, userauthtransport.ErrUserOAuthNotBound},
 		{userauthapp.ErrTelegramUnbindRequiresEmail, userauthtransport.ErrTelegramUnbindRequiresEmail},
+		{userauthapp.ErrOIDCUnbindRequiresLocalLogin, userauthtransport.ErrOIDCUnbindRequiresLocalLogin},
 		{userauthapp.ErrGoogleAutoLinkForbidden, userauthtransport.ErrGoogleAutoLinkForbidden},
 		{userauthapp.ErrGoogleUnbindLocked, userauthtransport.ErrGoogleUnbindLocked},
 		{userauthapp.ErrGoogleRedirectUnavailable, userauthtransport.ErrGoogleRedirectUnavailable},

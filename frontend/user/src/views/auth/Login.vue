@@ -231,6 +231,14 @@
                   {{ attemptingMiniAppLogin ? t('auth.login.telegramMiniAppLoggingIn') : t('auth.login.telegramMiniAppHint') }}
                 </p>
               </div>
+              <div v-if="showOidcLogin" class="space-y-2">
+                <Button type="button" variant="secondary" class="h-11 w-full font-semibold" @click="startOidcLogin">
+                  {{ oidcDisplayName || t('auth.login.oidcButton') }}
+                </Button>
+                <p class="text-center text-xs text-muted-foreground">
+                  {{ t('auth.login.oidcHint') }}
+                </p>
+              </div>
               <div v-if="showGoogleLogin" class="space-y-2">
                 <GoogleIdentityButton
                   :client-id="googleClientID"
@@ -300,6 +308,7 @@ const {
   showMiniAppLoginHint, attemptingMiniAppLogin, showTelegramMiniAppEntry, openTelegramMiniAppEntry,
   googleClientID, googleButtonLocale, googleIdentityUXMode, googleRedirectLoginURI,
   prepareGoogleRedirectLogin, showGoogleLogin, showThirdPartyLogin,
+  showOidcLogin, oidcDisplayName, startOidcLogin,
   handleGoogleCredential, handleGoogleScriptError,
   handleLogin,
 } = useLogin()

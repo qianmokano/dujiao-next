@@ -70,6 +70,15 @@ func (h *AdminHandler) Update(c *gin.Context) {
 		)
 		return
 	}
+	if strings.TrimSpace(req.Key) == constants.SettingKeyOIDCAuthConfig {
+		ginutil.RespondErrorWithMsg(
+			c,
+			response.CodeBadRequest,
+			"oidc_auth_config must be updated through /admin/settings/oidc-auth",
+			nil,
+		)
+		return
+	}
 
 	result, err := h.settings.UpdateWithEffects(req.Key, req.Value)
 	if err != nil {

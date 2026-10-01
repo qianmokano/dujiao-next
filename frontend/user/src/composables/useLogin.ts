@@ -82,6 +82,9 @@ export function useLogin() {
   const telegramEnabled = computed(() => !!telegramConfig.value?.enabled && telegramBotUsername.value !== '')
   const telegramLoginMode = computed(() => String(telegramConfig.value?.mode || '').trim())
   const isWidgetMode = computed(() => telegramLoginMode.value === 'widget' || (telegramLoginMode.value === '' && telegramEnabled.value))
+  const oidcConfig = computed(() => appStore.config?.oidc_auth || null)
+  const oidcEnabled = computed(() => !!oidcConfig.value?.enabled)
+  const oidcDisplayName = computed(() => String(oidcConfig.value?.display_name || '').trim())
   const googleConfig = computed(() => appStore.config?.google_auth || null)
   const googleClientID = computed(() => String(googleConfig.value?.client_id || '').trim())
   const googleEnabled = computed(() => !!googleConfig.value?.enabled && googleClientID.value !== '')
@@ -104,11 +107,13 @@ export function useLogin() {
     googleClientID.value,
     isTelegramMiniApp.value,
   ) && googleRedirectAvailable)
+  const showOidcLogin = computed(() => oidcEnabled.value)
   const showThirdPartyLogin = computed(() => hasThirdPartyLoginOption(
     showTelegramWidget.value,
     showTelegramOidc.value,
     showMiniAppLoginHint.value,
     showGoogleLogin.value,
+    showOidcLogin.value,
   ))
   const telegramMiniAppEntryLink = computed(() => buildTelegramMiniAppEntryLink(telegramBotUsername.value, telegramMiniAppURL.value))
   const showTelegramMiniAppEntry = computed(() => !isTelegramMiniApp.value && telegramMiniAppEntryLink.value !== '')
@@ -400,6 +405,28 @@ export function useLogin() {
     }
   }
 
+  const startOidcLogin = async () => {
+    error.value = ''
+    try {
+      sessionStorage.removeItem('oidc_intent')
+      const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : ''
+      if (redirect) {
+        sessionStorage.setItem('oidc_redirect', redirect)
+      } else {
+        sessionStorage.removeItem('oidc_redirect')
+      }
+      const res = await userAuthAPI.oidcStart()
+      const url = String(res?.data?.data?.auth_url || '')
+      if (!url) {
+        error.value = t('auth.login.oidcLoginFailed')
+        return
+      }
+      window.location.href = url
+    } catch (err: any) {
+      error.value = err?.message || t('auth.login.oidcLoginFailed')
+    }
+  }
+
   const renderTelegramWidget = () => {
     if (telegramLoginMode.value === 'oidc') {
       clearTelegramWidget()
@@ -509,6 +536,7 @@ export function useLogin() {
     telegramWidgetRef,
     showTelegramOidc,
     startTelegramOidc,
+    showOidcLogin, oidcDisplayName, startOidcLogin,
     showMiniAppLoginHint,
     attemptingMiniAppLogin,
     showTelegramMiniAppEntry,

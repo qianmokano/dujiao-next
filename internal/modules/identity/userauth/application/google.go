@@ -572,6 +572,13 @@ func (s *Service) isUsableExternalIdentity(identity *externalidentitydomain.Iden
 		return enabled &&
 			strings.TrimSpace(username) != "" &&
 			(mode == "widget" || mode == "oidc")
+	case constants.UserOAuthProviderOIDC:
+		if s.oidcAuthService == nil {
+			return false
+		}
+		public := s.oidcAuthService.PublicConfig()
+		enabled, _ := public["enabled"].(bool)
+		return enabled
 	default:
 		// Unknown providers are not assumed to be a usable recovery method.
 		return false

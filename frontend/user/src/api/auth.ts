@@ -15,6 +15,9 @@ export const userAuthAPI = {
     telegramOidcCallback: (data: { code: string; state: string }) =>
         userApi.post('/auth/telegram/oidc/callback', data),
     googleLogin: (data: GoogleCredentialPayload) => userApi.post('/auth/google/login', data),
+    oidcStart: () => userApi.get('/auth/oidc/start'),
+    oidcCallback: (data: { code: string; state: string }) =>
+        userApi.post('/auth/oidc/callback', data),
     googleRedirectIntent: () =>
         userApi.post(GOOGLE_REDIRECT_API_PATHS.loginIntent, {}, { credentials: 'include' }),
     googleRedirectExchange: () =>

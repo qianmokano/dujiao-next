@@ -314,6 +314,11 @@ const router = createRouter({
             component: templateView('auth/TelegramCallback', () => import('../views/auth/TelegramCallback.vue')),
         },
         {
+            path: '/auth/oidc/callback',
+            name: 'user-oidc-callback',
+            component: templateView('auth/OidcCallback', () => import('../views/auth/OidcCallback.vue')),
+        },
+        {
             path: GOOGLE_REDIRECT_FRONTEND_CALLBACK_PATH,
             name: 'user-google-callback',
             component: templateView('auth/GoogleCallback', () => import('../views/auth/GoogleCallback.vue')),

@@ -1073,7 +1073,10 @@
         "codeRequired": "Please enter the code",
         "recoveryRequired": "Please enter a recovery code",
         "verifyFailed": "Verification failed, please check your input"
-      }
+      },
+      "oidcButton": "SSO Login",
+      "oidcHint": "Continue with your SSO account",
+      "oidcLoginFailed": "Failed to start SSO login, please try again"
     },
     "telegramCallback": {
       "processing": "Processing Telegram login…",
@@ -1133,6 +1136,11 @@
         "sendCodeFailed": "Failed to send code",
         "resetFailed": "Reset failed, please check input"
       }
+    },
+    "oidcCallback": {
+      "processing": "Completing sign-in…",
+      "failed": "SSO sign-in failed, please try again",
+      "backToLogin": "Back to login"
     }
   },
   "order": {
