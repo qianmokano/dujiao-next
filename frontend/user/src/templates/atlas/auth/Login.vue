@@ -48,7 +48,7 @@
       </form>
 
       <!-- 密码登录 -->
-      <form v-else class="mt-6 grid gap-4" @submit.prevent="handleLogin">
+      <form v-else v-show="!ssoOnlyMode" class="mt-6 grid gap-4" @submit.prevent="handleLogin">
         <FormField :label="t('auth.login.emailLabel')" :error="formValidation.getError('email')">
           <template #default="{ id, hasError, describedBy }">
             <Input
@@ -93,7 +93,7 @@
           </template>
         </FormField>
 
-        <div v-if="loginCaptchaEnabled">
+        <div v-if="loginCaptchaEnabled && !ssoOnlyMode">
           <p class="mb-2 text-[13px] font-medium text-foreground">{{ t('auth.common.captchaLabel') }}</p>
           <ImageCaptcha
             v-if="captchaProvider === 'image'"
@@ -110,7 +110,7 @@
           />
         </div>
 
-        <div class="flex flex-wrap items-center justify-between gap-2 text-[13px] text-muted-foreground">
+        <div v-if="!ssoOnlyMode" class="flex flex-wrap items-center justify-between gap-2 text-[13px] text-muted-foreground">
           <label class="inline-flex items-center gap-2">
             <input v-model="rememberMe" type="checkbox" class="h-4 w-4 accent-[var(--ui-accent)]" />
             {{ t('auth.login.rememberMe') }}
@@ -123,7 +123,7 @@
         <PageFeedback v-if="info" level="info" :message="info" />
         <PageFeedback v-if="error" level="error" :message="error" />
 
-        <button type="submit" class="h-11 w-full rounded-md bg-primary text-[14.5px] font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50" :disabled="userAuthStore.loading">
+        <button v-if="!ssoOnlyMode" type="submit" class="h-11 w-full rounded-md bg-primary text-[14.5px] font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50" :disabled="userAuthStore.loading">
           {{ userAuthStore.loading ? t('auth.login.submitting') : t('auth.login.submit') }}
         </button>
 
@@ -171,7 +171,7 @@
       </form>
     </div>
 
-    <div v-if="registrationEnabled" class="mt-5 text-center">
+    <div v-if="registrationEnabled && !ssoOnlyMode" class="mt-5 text-center">
       <RouterLink to="/auth/register" class="text-[13.5px] text-muted-foreground transition-colors hover:text-foreground">{{ t('auth.login.noAccount') }}</RouterLink>
     </div>
   </div>
@@ -202,7 +202,7 @@ const {
   showMiniAppLoginHint, attemptingMiniAppLogin, showTelegramMiniAppEntry, openTelegramMiniAppEntry,
   googleClientID, googleButtonLocale, googleIdentityUXMode, googleRedirectLoginURI,
   prepareGoogleRedirectLogin, showGoogleLogin, showThirdPartyLogin,
-  showOidcLogin, oidcDisplayName, startOidcLogin,
+  showOidcLogin, oidcDisplayName, startOidcLogin, ssoOnlyMode,
   handleGoogleCredential, handleGoogleScriptError,
   handleLogin,
 } = useLogin()

@@ -54,7 +54,7 @@
         </form>
 
         <!-- 密码登录 -->
-        <form v-else class="grid gap-[18px]" @submit.prevent="handleLogin">
+        <form v-else v-show="!ssoOnlyMode" class="grid gap-[18px]" @submit.prevent="handleLogin">
           <FormField :label="t('auth.login.emailLabel')" :error="formValidation.getError('email')">
             <template #icon><Mail class="h-3.5 w-3.5" aria-hidden="true" /></template>
             <template #default="{ id, hasError, describedBy }">
@@ -101,7 +101,7 @@
             </template>
           </FormField>
 
-          <div v-if="loginCaptchaEnabled">
+          <div v-if="loginCaptchaEnabled && !ssoOnlyMode">
             <label class="mb-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
               <ShieldCheck class="h-3.5 w-3.5 opacity-70" /> {{ t('auth.common.captchaLabel') }}
             </label>
@@ -137,7 +137,7 @@
             <AlertDescription>{{ error }}</AlertDescription>
           </Alert>
 
-          <Button type="submit" :disabled="userAuthStore.loading" class="h-11 w-full rounded-full font-bold">
+          <Button v-if="!ssoOnlyMode" type="submit" :disabled="userAuthStore.loading" class="h-11 w-full rounded-full font-bold">
             <LogIn v-if="!userAuthStore.loading" class="h-4 w-4" />
             {{ userAuthStore.loading ? t('auth.login.submitting') : t('auth.login.submit') }}
           </Button>
@@ -186,7 +186,7 @@
         </form>
       </Card>
 
-      <div v-if="registrationEnabled" class="mt-4 text-center">
+      <div v-if="registrationEnabled && !ssoOnlyMode" class="mt-4 text-center">
         <RouterLink to="/auth/register" class="text-sm text-muted-foreground transition-colors hover:text-foreground">{{ t('auth.login.noAccount') }}</RouterLink>
       </div>
     </div>
@@ -221,7 +221,7 @@ const {
   showMiniAppLoginHint, attemptingMiniAppLogin, showTelegramMiniAppEntry, openTelegramMiniAppEntry,
   googleClientID, googleButtonLocale, googleIdentityUXMode, googleRedirectLoginURI,
   prepareGoogleRedirectLogin, showGoogleLogin, showThirdPartyLogin,
-  showOidcLogin, oidcDisplayName, startOidcLogin,
+  showOidcLogin, oidcDisplayName, startOidcLogin, ssoOnlyMode,
   handleGoogleCredential, handleGoogleScriptError,
   handleLogin,
 } = useLogin()

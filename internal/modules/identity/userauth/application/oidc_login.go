@@ -145,8 +145,10 @@ func (s *Service) loginVerifiedOIDC(verified *oidcauthapp.IdentityVerified) (*Us
 	return s.completeExternalLogin(user, constants.LoginLogSourceOIDC)
 }
 
-// findOrCreateOIDCUser 按邮箱找已有用户；不存在则按注册策略建号。
-// 邮箱在 IdP 侧是权威身份（本部署为自有 Casdoor），首登即与同邮箱本地账号合并。
+// findOrCreateOIDCUser 按邮箱找已有用户；不存在则直接建号。
+// SSO 是本部署唯一的注册入口：IdP（自有 Casdoor）注册时已强制邮箱验证码，
+// 因此这里有意不检查站点注册开关——关闭本地注册不影响经 IdP 的新用户建号。
+// 首登即与同邮箱本地账号合并。
 func (s *Service) findOrCreateOIDCUser(verified *oidcauthapp.IdentityVerified) (*userdomain.User, bool, error) {
 	email := strings.TrimSpace(verified.Email)
 	if email == "" {
@@ -162,16 +164,6 @@ func (s *Service) findOrCreateOIDCUser(verified *oidcauthapp.IdentityVerified) (
 			return nil, false, ErrUserDisabled
 		}
 		return user, false, nil
-	}
-
-	if s.settingService != nil {
-		registrationEnabled, err := s.settingService.GetRegistrationEnabled(true)
-		if err != nil {
-			return nil, false, err
-		}
-		if !registrationEnabled {
-			return nil, false, ErrRegistrationDisabled
-		}
 	}
 
 	randomSuffix, err := randomNumericCode(16)
