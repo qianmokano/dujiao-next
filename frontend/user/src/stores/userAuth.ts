@@ -153,7 +153,12 @@ export const useUserAuthStore = defineStore('user-auth', () => {
         loading.value = true
         try {
             const response = await userAuthAPI.oidcPasswordLogin(payload)
-            return response.data.data
+            const data = response.data.data || {}
+            if (!data.requires_mfa) {
+                // 与普通登录同构:持久化 token/用户,再交给 2FA 分支判断
+                handleLoginResponse(data)
+            }
+            return data
         } finally {
             loading.value = false
         }
