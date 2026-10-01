@@ -21,41 +21,35 @@
 
 ## VPS 部署 Casdoor
 
-1. `/opt/casdoor/docker-compose.yml`(独立于 dujiao-next 的 compose,避免互相牵连):
+1. `/opt/casdoor/`(独立于 dujiao-next 的 compose,避免互相牵连)。**已在 2026-10-01 按 此配置部署跑通**,要点:
 
-   ```yaml
-   services:
-     casdoor:
-       image: casbin/casdoor:latest   # 部署时锁定具体版本 tag
-       restart: unless-stopped
-       ports:
-         - "127.0.0.1:8000:8000"
-       environment:
-         origin: "https://auth.kanoapi.top"
-         runmode: "prod"
-         driverName: "sqlite"
-         dbName: "casdoor"
-         dataSourceName: "file:casdoor.db?_busy_timeout=5000"
-         signupItem: "[]"
-       volumes:
-         - ./data:/conf
-   ```
-
-   (SQLite 数据落在 `/opt/casdoor/data/casdoor.db`;参数以所选版本的官方 compose 为准,此处为最小形态。)
+   - 镜像 `casbin/casdoor:4.13.0`(Docker Hub tag **无 v 前缀**,`v4.13.0` 不存在;amd64/arm64 双架构)。
+   - 配置经挂载 `/conf/app.conf`(整文件,非 env),关键项:`driverName = sqlite`(**必须是不带 3 的 sqlite**,modernc 纯 Go 驱动;官方镜像没编译 CGO 的 sqlite3,写 sqlite3 会 panic "unknown driver")、`dataSourceName = file:/data/casdoor.db?_busy_timeout=5000`、`origin = "https://auth.kanoapi.top"`、`runmode = prod`、`defaultLanguage = "zh"`。
+   - 容器以 **USER 1000** 运行:挂载的 `/opt/casdoor/data`、`/opt/casdoor/logs` 需 `chown 1000:1000`,`conf/app.conf` 需 644(600 会 permission denied panic)。
+   - compose 端口 `127.0.0.1:8000:8000`;volumes:`./conf:/conf`、`./data:/data`、`./logs:/logs`。
+   - 验证:`curl -s http://127.0.0.1:8000/.well-known/openid-configuration` 返回 issuer 与三端点(issuer 应为 auth.kanoapi.top)。
 
 2. host nginx 新站点 `auth.kanoapi.top` 反代 `127.0.0.1:8000`(client_max_body_size 适度放宽,WebSocket 升级头按官方示例),`certbot --nginx -d auth.kanoapi.top` 签证书。
 3. 初始化:浏览器打开站点,`admin/123` 首登**立即改密**并启用 2FA。
 4. 验证:`curl -s https://auth.kanoapi.top/.well-known/openid-configuration | jq .` 能返回三端点。
 
-## Casdoor 配置
+## Casdoor 配置(2026-10-01 已完成)
 
-1. 组织:默认 `built-in` 或新建 `kano`。
-2. 修改身份源应用或新建应用 `dujiao-store`:
-   - Redirect URL:`https://store.kanoapi.top/auth/oidc/callback`
-   - Client ID / Client Secret 记录到密码管理器。
-   - Token 签名算法保持 RS256(dujiao 侧仅验 RS256)。
-3. sub2api 侧应用:sub2api 后台"第三方登录 → OIDC"里通常自带 client(或按其文档创建),Redirect URL 填 `https://api.kanoapi.top/login/oauth/oidc`(以其后台提示为准)。
-4. 登录页品牌:应用 → Login UI(背景图 URL / Form CSS / 侧边面板 HTML / 主题主色圆角),见官方 Login UI customization。
+已用 API 完成初始化(脚本 `/tmp/casdoor-init2.py`、`/tmp/casdoor-addapp3.py` 思路):
+
+- **admin 默认密码已改**(初始 `admin/123`,新密码在部署会话中交付,请存密码管理器并尽快在后台开 2FA)。
+- 已建应用 `dujiao-store`(owner=admin,organization=built-in):Redirect URI `https://store.kanoapi.top/auth/oidc/callback`,tokenFormat=JWT(RS256),grantTypes=authorization_code,token 有效 7 天。
+
+API 自动化的坑(重装时参考):
+
+1. `/api/login` body 必须带 `"type":"login"`;响应会发**两个** Set-Cookie(轮换),以最后一个 `casdoor_session_id` 为准(Python `http.cookiejar` 对 IP 主机会拒收,需手动取头)。
+2. **改密码必须用 `POST /api/set-password`**(form:userOwner/userName/oldPassword/newPassword);`/api/update-user` 的默认列白名单**不含 password 列**,返回 ok 但密码纹丝不动。
+3. `/api/add-application` 用完整克隆 app-built-in 的对象会静默失败(返回 ok + "Unaffected",Insert 错误被源码吞掉);用**最小字段**(owner/name/displayName/organization/redirectUris/tokenFormat/grantTypes)创建,再按需 update。
+4. 验证:`GET /login/oauth/authorize?client_id=...&redirect_uri=...&response_type=code&scope=openid+profile+email&state=x&code_challenge=<S256>&code_challenge_method=S256` 应返回 200 登录页。
+
+sub2api 侧应用:在其后台"第三方登录 → OIDC"创建/启用,Redirect URL 按其后台提示填(形如 `https://api.kanoapi.top/login/oauth/oidc`),issuer 同为 `https://auth.kanoapi.top`。
+
+登录页品牌:应用 → Login UI(背景图 URL / Form CSS / 侧边面板 HTML / 主题主色圆角),见官方 Login UI customization。
 
 ## dujiao 侧配置(镜像发布后)
 
