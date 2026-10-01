@@ -101,6 +101,7 @@
           class="space-y-6"
           @submit.prevent="handleLogin"
         >
+          <template v-if="!ssoOnlyMode">
           <FormField
             :label="t('auth.login.emailLabel')"
             :error="formValidation.getError('email')"
@@ -158,7 +159,9 @@
             </template>
           </FormField>
 
-          <div v-if="loginCaptchaEnabled">
+          </template>
+
+          <div v-if="loginCaptchaEnabled && !ssoOnlyMode">
             <label class="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
               <ShieldCheck class="h-3.5 w-3.5 opacity-60" />
               {{ t('auth.common.captchaLabel') }}
@@ -178,7 +181,7 @@
             />
           </div>
 
-          <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+          <div v-if="!ssoOnlyMode" class="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
             <label class="inline-flex items-center gap-2">
               <input v-model="rememberMe" type="checkbox" class="h-4 w-4 accent-primary" />
               {{ t('auth.login.rememberMe') }}
@@ -200,7 +203,7 @@
             <AlertDescription>{{ error }}</AlertDescription>
           </Alert>
 
-          <Button type="submit" :disabled="userAuthStore.loading" class="h-11 w-full font-bold">
+          <Button v-if="!ssoOnlyMode" type="submit" :disabled="userAuthStore.loading" class="h-11 w-full font-bold">
             <LogIn v-if="!userAuthStore.loading" class="h-4 w-4" />
             {{ userAuthStore.loading ? t('auth.login.submitting') : t('auth.login.submit') }}
           </Button>
@@ -268,7 +271,7 @@
         </form>
       </Card>
 
-      <div v-if="registrationEnabled" class="mt-4 text-center">
+      <div v-if="registrationEnabled && !ssoOnlyMode" class="mt-4 text-center">
         <router-link
           to="/auth/register"
           class="text-muted-foreground transition-colors hover:text-foreground text-sm"
@@ -308,7 +311,7 @@ const {
   showMiniAppLoginHint, attemptingMiniAppLogin, showTelegramMiniAppEntry, openTelegramMiniAppEntry,
   googleClientID, googleButtonLocale, googleIdentityUXMode, googleRedirectLoginURI,
   prepareGoogleRedirectLogin, showGoogleLogin, showThirdPartyLogin,
-  showOidcLogin, oidcDisplayName, startOidcLogin,
+  showOidcLogin, oidcDisplayName, startOidcLogin, ssoOnlyMode,
   handleGoogleCredential, handleGoogleScriptError,
   handleLogin,
 } = useLogin()

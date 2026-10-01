@@ -108,6 +108,9 @@ export function useLogin() {
     isTelegramMiniApp.value,
   ) && googleRedirectAvailable)
   const showOidcLogin = computed(() => oidcEnabled.value)
+  // SSO-only 模式:IdP 为唯一注册/登录入口;?local=1 为管理员应急逃生口
+  const isLocalEscape = computed(() => route.query.local === '1')
+  const ssoOnlyMode = computed(() => showOidcLogin.value && !isLocalEscape.value)
   const showThirdPartyLogin = computed(() => hasThirdPartyLoginOption(
     showTelegramWidget.value,
     showTelegramOidc.value,
@@ -457,6 +460,19 @@ export function useLogin() {
     win[telegramCallbackName] = handleTelegramAuth
     renderTelegramWidget()
 
+    if (ssoOnlyMode.value) {
+      const resumeTg2FA = route.query.tg2fa === '1' && userAuthStore.challengeToken
+      const resumeGo2FA = shouldResumeGoogleRedirect2FA(
+        route.query.google2fa,
+        userAuthStore.challengeToken,
+      )
+      const resumeOidc2FA = route.query.oidc2fa === '1' && userAuthStore.challengeToken
+      if (!resumeTg2FA && !resumeGo2FA && !resumeOidc2FA && !isTelegramMiniApp.value) {
+        await startOidcLogin()
+        return
+      }
+    }
+
     const resumeTelegram2FA = route.query.tg2fa === '1' && userAuthStore.challengeToken
     const resumeGoogle2FA = shouldResumeGoogleRedirect2FA(
       route.query.google2fa,
@@ -536,7 +552,7 @@ export function useLogin() {
     telegramWidgetRef,
     showTelegramOidc,
     startTelegramOidc,
-    showOidcLogin, oidcDisplayName, startOidcLogin,
+    showOidcLogin, oidcDisplayName, startOidcLogin, ssoOnlyMode, isLocalEscape,
     showMiniAppLoginHint,
     attemptingMiniAppLogin,
     showTelegramMiniAppEntry,
