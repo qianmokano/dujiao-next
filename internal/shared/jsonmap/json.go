@@ -26,8 +26,15 @@ func (value *JSON) Scan(source interface{}) error {
 		*value = make(JSON)
 		return nil
 	}
-	bytes, ok := source.([]byte)
-	if !ok {
+	var bytes []byte
+	switch typed := source.(type) {
+	case []byte:
+		bytes = typed
+	case string:
+		// 纯 Go SQLite 驱动对 TEXT 列返回 string;外部工具(psql/sqlite3 CLI/维护脚本)
+		// 写入的 JSON 行会走这里,静默丢弃会把整段配置读成空对象。
+		bytes = []byte(typed)
+	default:
 		return nil
 	}
 	return json.Unmarshal(bytes, value)
