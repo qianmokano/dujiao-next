@@ -72,6 +72,16 @@ google_auth:
   # 后者依赖已启用且可用的 Redis 7（一次性状态通过 GETDEL 消费）。
   client_id: ""
 
+oidc_auth:
+  enabled: false
+  # 通用 OIDC 单点登录（对接 Casdoor 等标准 OIDC 提供方）。
+  # 在 IdP 侧为本商城创建应用后填写：
+  issuer: ""         # IdP 根地址，形如 https://auth.example.com（不带末尾斜杠）
+  client_id: ""      # IdP 分配的 Client ID
+  client_secret: ""  # IdP 分配的 Client Secret（敏感）
+  redirect_uri: ""   # 形如 https://你的商城域名/auth/oidc/callback
+  display_name: ""   # 登录按钮文案（默认"统一登录"）
+
 redis:
   enabled: true
   host: 127.0.0.1

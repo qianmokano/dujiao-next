@@ -72,6 +72,17 @@ type GoogleAuthFallback struct {
 	ClientID string
 }
 
+// OIDCAuthPublic 通用 OIDC 登录公开配置端口。
+type OIDCAuthPublic interface {
+	PublicConfig() map[string]interface{}
+}
+
+// OIDCAuthFallback 无 OIDCAuthService 时的配置回退。
+type OIDCAuthFallback struct {
+	Enabled     bool
+	DisplayName string
+}
+
 // ResellerOverlay 分销站配置叠加端口。
 type ResellerOverlay interface {
 	ApplyPublicConfigOverlay(ctx context.Context, tenant reseller.TenantContext, base map[string]interface{}) (map[string]interface{}, error)
@@ -87,6 +98,8 @@ type Handler struct {
 	fallback       TelegramAuthFallback
 	google         GoogleAuthPublic
 	googleFallback GoogleAuthFallback
+	oidc           OIDCAuthPublic
+	oidcFallback   OIDCAuthFallback
 	overlay        ResellerOverlay
 }
 
@@ -99,6 +112,8 @@ func NewHandler(
 	fallback TelegramAuthFallback,
 	google GoogleAuthPublic,
 	googleFallback GoogleAuthFallback,
+	oidc OIDCAuthPublic,
+	oidcFallback OIDCAuthFallback,
 	overlay ResellerOverlay,
 ) *Handler {
 	if cache == nil {
@@ -119,6 +134,8 @@ func NewHandler(
 		fallback:       fallback,
 		google:         google,
 		googleFallback: googleFallback,
+		oidc:           oidc,
+		oidcFallback:   oidcFallback,
 		overlay:        overlay,
 	}
 }
@@ -191,6 +208,15 @@ func (h *Handler) GetConfig(c *gin.Context) {
 	data["telegram_auth"] = telegramAuthConfig
 
 	data["google_auth"] = resolveGoogleAuthPublicConfig(h.google, h.googleFallback)
+
+	oidcAuthConfig := map[string]interface{}{
+		"enabled":      false,
+		"display_name": strings.TrimSpace(h.oidcFallback.DisplayName),
+	}
+	if h.oidc != nil {
+		oidcAuthConfig = h.oidc.PublicConfig()
+	}
+	data["oidc_auth"] = oidcAuthConfig
 
 	affiliateSetting, err := h.settings.GetAffiliateSettingMap()
 	if err != nil {

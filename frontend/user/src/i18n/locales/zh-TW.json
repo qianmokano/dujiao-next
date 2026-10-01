@@ -1073,7 +1073,10 @@
         "codeRequired": "請輸入動態碼",
         "recoveryRequired": "請輸入恢復碼",
         "verifyFailed": "驗證失敗，請確認輸入是否正確"
-      }
+      },
+      "oidcButton": "統一登入",
+      "oidcHint": "使用單點登入帳號繼續",
+      "oidcLoginFailed": "單點登入發起失敗，請稍後重試"
     },
     "telegramCallback": {
       "processing": "正在處理 Telegram 登入…",
@@ -1133,6 +1136,11 @@
         "sendCodeFailed": "驗證碼發送失敗",
         "resetFailed": "重設失敗，請檢查輸入"
       }
+    },
+    "oidcCallback": {
+      "processing": "正在完成登入…",
+      "failed": "單點登入失敗，請重試",
+      "backToLogin": "返回登入"
     }
   },
   "order": {

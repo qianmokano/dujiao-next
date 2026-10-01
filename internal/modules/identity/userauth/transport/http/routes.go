@@ -129,6 +129,26 @@ func RegisterUserGoogleAuthRoutes(auth gin.IRoutes, handler *UserGoogleHandler, 
 	auth.POST("/google/redirect/exchange", handler.ExchangeGoogleRedirectLogin)
 }
 
+// RegisterUserOIDCAuthRoutes 注册公开通用 OIDC 登录端点（需附带限流中间件）。
+func RegisterUserOIDCAuthRoutes(auth gin.IRoutes, handler *UserOIDCHandler, rateLimit gin.HandlerFunc) {
+	if auth == nil || handler == nil || rateLimit == nil {
+		panic("user oidc auth routes: required dependency is nil")
+	}
+	auth.GET("/oidc/start", rateLimit, handler.StartOIDCLogin)
+	auth.POST("/oidc/callback", rateLimit, handler.OIDCLoginCallback)
+}
+
+// RegisterUserOIDCRoutes 注册登录态通用 OIDC 绑定端点。
+func RegisterUserOIDCRoutes(user gin.IRoutes, handler *UserOIDCHandler) {
+	if user == nil || handler == nil {
+		panic("user oidc routes: required dependency is nil")
+	}
+	user.GET("/me/oidc", handler.GetMyOIDCBinding)
+	user.GET("/me/oidc/start", handler.StartOIDCBind)
+	user.POST("/me/oidc/callback", handler.OIDCBindCallback)
+	user.DELETE("/me/oidc/unbind", handler.UnbindMyOIDC)
+}
+
 // RegisterUserGoogleRoutes registers authenticated Google binding endpoints.
 func RegisterUserGoogleRoutes(user gin.IRoutes, handler *UserGoogleHandler, bindRateLimit gin.HandlerFunc) {
 	if user == nil || handler == nil || bindRateLimit == nil {

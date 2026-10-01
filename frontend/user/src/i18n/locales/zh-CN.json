@@ -1026,7 +1026,10 @@
         "codeRequired": "请输入动态码",
         "recoveryRequired": "请输入恢复码",
         "verifyFailed": "验证失败，请确认输入是否正确"
-      }
+      },
+      "oidcButton": "统一登录",
+      "oidcHint": "使用单点登录账号继续",
+      "oidcLoginFailed": "单点登录发起失败，请稍后重试"
     },
     "telegramCallback": {
       "processing": "正在处理 Telegram 登录…",
@@ -1086,6 +1089,11 @@
         "sendCodeFailed": "验证码发送失败",
         "resetFailed": "重置失败，请检查输入"
       }
+    },
+    "oidcCallback": {
+      "processing": "正在完成登录…",
+      "failed": "单点登录失败，请重试",
+      "backToLogin": "返回登录"
     }
   },
   "order": {

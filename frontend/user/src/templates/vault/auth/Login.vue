@@ -159,7 +159,10 @@
               <div v-else-if="showMiniAppLoginHint" class="grid gap-2">
                 <p class="text-center text-xs text-muted-foreground">{{ attemptingMiniAppLogin ? t('auth.login.telegramMiniAppLoggingIn') : t('auth.login.telegramMiniAppHint') }}</p>
               </div>
-              <div v-if="showGoogleLogin" class="grid gap-2">
+              <div v-if="showOidcLogin" class="grid gap-2">
+              <Button type="button" variant="outline" class="h-11 w-full rounded-full font-semibold" @click="startOidcLogin">{{ oidcDisplayName || t('auth.login.oidcButton') }}</Button>
+            </div>
+            <div v-if="showGoogleLogin" class="grid gap-2">
                 <GoogleIdentityButton
                   :client-id="googleClientID"
                   :locale="googleButtonLocale"
@@ -218,6 +221,7 @@ const {
   showMiniAppLoginHint, attemptingMiniAppLogin, showTelegramMiniAppEntry, openTelegramMiniAppEntry,
   googleClientID, googleButtonLocale, googleIdentityUXMode, googleRedirectLoginURI,
   prepareGoogleRedirectLogin, showGoogleLogin, showThirdPartyLogin,
+  showOidcLogin, oidcDisplayName, startOidcLogin,
   handleGoogleCredential, handleGoogleScriptError,
   handleLogin,
 } = useLogin()
