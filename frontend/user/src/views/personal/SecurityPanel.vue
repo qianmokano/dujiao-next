@@ -3,7 +3,7 @@
     <div class="rounded-2xl border bg-card p-7 shadow-sm">
       <PanelHeading
         :title="t('personalCenter.security.title')"
-        :description="requiresOldEmailCode ? t('personalCenter.security.subtitle') : t('personalCenter.security.subtitleBindOnly')"
+        :description="unifiedAuthOnly ? '' : (requiresOldEmailCode ? t('personalCenter.security.subtitle') : t('personalCenter.security.subtitleBindOnly'))"
         :icon="ShieldCheck"
       >
         <template #actions>
@@ -14,6 +14,7 @@
       <PageFeedback v-if="securityAlert" class="mb-5" :level="securityAlert.level" :message="securityAlert.message" />
 
       <TelegramBindingSection
+        v-if="!unifiedAuthOnly"
         :telegram-enabled="telegramEnabled"
         :telegram-bound="telegramBound"
         :loading-telegram-binding="userProfileStore.loadingTelegramBinding"
@@ -37,6 +38,7 @@
       />
 
       <GoogleBindingSection
+        v-if="!unifiedAuthOnly"
         :google-enabled="googleAuthorizationEnabled"
         :google-bound="googleBound"
         :loading-google-binding="userProfileStore.loadingGoogleBinding"
@@ -60,6 +62,7 @@
       />
 
       <EmailChangeForm
+        v-if="!unifiedAuthOnly"
         :current-email-display="currentEmailDisplay"
         :requires-old-email-code="requiresOldEmailCode"
         v-model:new-email="securityForm.newEmail"
@@ -73,6 +76,7 @@
         @send-old-code="handleSendOldCode"
         @send-new-code="handleSendNewCode"
       />
+      <IdentityManagementNotice v-if="unifiedAuthOnly" :href="accountURL" />
     </div>
 
     <LoginHistorySection
@@ -126,6 +130,8 @@ import EmailChangeForm from '../../components/security/EmailChangeForm.vue'
 import LoginHistorySection from '../../components/security/LoginHistorySection.vue'
 import PasswordChangeForm from '../../components/security/PasswordChangeForm.vue'
 import TwoFactorSection from '../../components/security/TwoFactorSection.vue'
+import IdentityManagementNotice from '../../components/security/IdentityManagementNotice.vue'
+import { isUnifiedAuthOnly, safeIdentityURL } from '../../utils/unifiedAuth'
 
 const { t } = useI18n()
 const { isAtlas, success: notifySuccess } = useFeedback()
@@ -135,6 +141,8 @@ const appStore = useAppStore()
 const telegramMiniAppStore = useTelegramMiniAppStore()
 const userProfileStore = useUserProfileStore()
 const userAuthStore = useUserAuthStore()
+const unifiedAuthOnly = computed(() => isUnifiedAuthOnly(appStore.config?.oidc_auth))
+const accountURL = computed(() => safeIdentityURL(appStore.config?.oidc_auth?.account_url))
 
 const securityForm = reactive({
   newEmail: '',
@@ -182,7 +190,7 @@ const telegramMiniAppEntryLink = computed(() => buildTelegramMiniAppEntryLink(te
 const showTelegramMiniAppEntry = computed(() => !isTelegramMiniApp.value && telegramMiniAppEntryLink.value !== '')
 const emailChangeMode = computed(() => userProfileStore.profile?.email_change_mode || 'change_with_old_and_new')
 const requiresOldEmailCode = computed(() => emailChangeMode.value !== 'bind_only')
-const canManagePassword = computed(() => requiresOldEmailCode.value)
+const canManagePassword = computed(() => !unifiedAuthOnly.value && requiresOldEmailCode.value)
 const passwordChangeMode = computed(() => userProfileStore.profile?.password_change_mode || 'change_with_old')
 const requiresOldPassword = computed(() => passwordChangeMode.value !== 'set_without_old')
 // External identities can create passwordless accounts. Only an explicit

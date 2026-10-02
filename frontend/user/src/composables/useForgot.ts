@@ -8,6 +8,7 @@ import { useAppStore } from '../stores/app'
 import type { CaptchaPayload } from '../api'
 import ImageCaptcha from '../components/captcha/ImageCaptcha.vue'
 import TurnstileCaptcha from '../components/captcha/TurnstileCaptcha.vue'
+import { isUnifiedAuthOnly, safeIdentityURL } from '../utils/unifiedAuth'
 
 /**
  * 找回密码页共享逻辑（classic + vault 双模板共用）。
@@ -26,6 +27,8 @@ export function useForgot() {
   })
 
   const emailVerificationEnabled = computed(() => appStore.config?.email_verification_enabled !== false)
+  const unifiedAuthOnly = computed(() => isUnifiedAuthOnly(appStore.config?.oidc_auth))
+  const passwordResetURL = computed(() => safeIdentityURL(appStore.config?.oidc_auth?.password_reset_url))
 
   const email = ref('')
   const code = ref('')
@@ -78,6 +81,7 @@ export function useForgot() {
   }
 
   const performSendCode = async () => {
+    if (unifiedAuthOnly.value) return
     error.value = ''
     if (!email.value) {
       error.value = t('auth.forgot.errors.emailRequired')
@@ -122,6 +126,7 @@ export function useForgot() {
   }
 
   const performReset = async () => {
+    if (unifiedAuthOnly.value) return
     error.value = ''
     if (!email.value || !code.value || !newPassword.value) return
     try {
@@ -147,6 +152,8 @@ export function useForgot() {
     userAuthStore,
     brandSiteName,
     emailVerificationEnabled,
+    unifiedAuthOnly,
+    passwordResetURL,
     email,
     code,
     newPassword,

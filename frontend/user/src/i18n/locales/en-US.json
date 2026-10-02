@@ -359,6 +359,8 @@
       "saveSuccess": "Profile updated"
     },
     "security": {
+      "unifiedIdentityHint": "Manage your password, identity email and two-factor authentication through your unified account.",
+      "manageUnifiedIdentity": "Manage unified account",
       "title": "Security",
       "subtitle": "Change email with double verification codes",
       "subtitleBindOnly": "This account has no real email bound yet. Please bind one first.",

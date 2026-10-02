@@ -11,7 +11,8 @@
       <h1 class="text-[22px] font-semibold tracking-[-0.01em]">{{ t('auth.forgot.title') }}</h1>
       <p class="mt-1.5 text-[14px] text-muted-foreground">{{ t('auth.forgot.subtitle') }}</p>
 
-      <div v-if="!emailVerificationEnabled" class="mt-6">
+      <IdentityManagementNotice v-if="unifiedAuthOnly" :href="passwordResetURL" class="mt-6" recovery />
+      <div v-else-if="!emailVerificationEnabled" class="mt-6">
         <PageFeedback level="error">
           <p class="font-medium">{{ t('auth.forgot.disabled') }}</p>
           <RouterLink to="/auth/login" class="mt-2.5 inline-block text-[13px] text-muted-foreground underline underline-offset-2 transition-colors hover:text-foreground">{{ t('auth.forgot.backLogin') }}</RouterLink>
@@ -81,12 +82,13 @@ import ImageCaptcha from '../../../components/captcha/ImageCaptcha.vue'
 import TurnstileCaptcha from '../../../components/captcha/TurnstileCaptcha.vue'
 import { Input } from '@/components/ui/input'
 import { useForgot } from '../../../composables/useForgot'
+import IdentityManagementNotice from '../../../components/security/IdentityManagementNotice.vue'
 import PageFeedback from '../../../components/PageFeedback.vue'
 
 const { t } = useI18n()
 
 const {
-  userAuthStore, brandSiteName, emailVerificationEnabled,
+  userAuthStore, brandSiteName, emailVerificationEnabled, unifiedAuthOnly, passwordResetURL,
   email, code, newPassword, error, sending, countdown,
   captchaPayload, turnstileToken, imageCaptchaRef, turnstileRef,
   captchaProvider, sendCodeCaptchaEnabled, turnstileSiteKey,

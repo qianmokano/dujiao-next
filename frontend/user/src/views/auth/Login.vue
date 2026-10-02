@@ -233,13 +233,16 @@
             />
           </div>
 
-          <div v-if="!ssoOnlyMode" class="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-            <label class="inline-flex items-center gap-2">
+          <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+            <label v-if="!ssoOnlyMode" class="inline-flex items-center gap-2">
               <input v-model="rememberMe" type="checkbox" class="h-4 w-4 accent-primary" />
               {{ t('auth.login.rememberMe') }}
             </label>
+            <a v-if="ssoOnlyMode && passwordResetURL" :href="passwordResetURL" class="font-medium text-muted-foreground transition-colors hover:text-foreground">
+              {{ t('auth.login.forgot') }}
+            </a>
             <router-link
-              v-if="emailVerificationEnabled"
+              v-else-if="!ssoOnlyMode && emailVerificationEnabled"
               to="/auth/forgot"
               class="font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
@@ -363,7 +366,7 @@ const {
   showMiniAppLoginHint, attemptingMiniAppLogin, showTelegramMiniAppEntry, openTelegramMiniAppEntry,
   googleClientID, googleButtonLocale, googleIdentityUXMode, googleRedirectLoginURI,
   prepareGoogleRedirectLogin, showGoogleLogin, showThirdPartyLogin,
-  showOidcLogin, oidcDisplayName, startOidcLogin, ssoOnlyMode,
+  showOidcLogin, oidcDisplayName, startOidcLogin, ssoOnlyMode, passwordResetURL,
   ssoMfaChallenge, ssoMfaType, ssoMfaCode, performSsoMfa, cancelSsoMfa,
   handleGoogleCredential, handleGoogleScriptError,
   handleLogin,

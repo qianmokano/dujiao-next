@@ -3186,6 +3186,8 @@ const messages = {
         },
         oidc: {
           title: '单点登录（OIDC）配置',
+          onlyEnabled: '仅统一登录',
+          onlyEnabledHint: '普通客户只能通过统一账户登录和管理密码、身份邮箱及二步验证。管理员独立后台登录不受影响；需先启用并配置 OIDC。',
           subtitle: '对接 Casdoor 等标准 OIDC 提供方，实现统一账号登录',
           enabled: '启用单点登录',
           issuer: 'Issuer 根地址',
@@ -7659,6 +7661,8 @@ const messages = {
         },
         oidc: {
           title: '單點登入（OIDC）配置',
+          onlyEnabled: '僅統一登入',
+          onlyEnabledHint: '一般客戶只能透過統一帳號登入及管理密碼、身分信箱與兩步驗證。管理員獨立後台登入不受影響；須先啟用並設定 OIDC。',
           subtitle: '對接 Casdoor 等標準 OIDC 提供方，實現統一帳號登入',
           enabled: '啟用單點登入',
           issuer: 'Issuer 根網址',
@@ -12132,6 +12136,8 @@ const messages = {
         },
         oidc: {
           title: 'SSO (OIDC) Settings',
+          onlyEnabled: 'Unified sign-in only',
+          onlyEnabledHint: 'Customers sign in and manage credentials through their unified account. Independent admin sign-in remains available. Enable and configure OIDC first.',
           subtitle: 'Connect a standard OIDC provider such as Casdoor for unified sign-in',
           enabled: 'Enable SSO login',
           issuer: 'Issuer base URL',
