@@ -15,7 +15,8 @@
           <p class="mt-2 text-sm text-muted-foreground">{{ t('auth.forgot.subtitle') }}</p>
         </div>
 
-        <Alert v-if="!emailVerificationEnabled" variant="destructive" class="text-center">
+        <IdentityManagementNotice v-if="unifiedAuthOnly" :href="passwordResetURL" recovery />
+        <Alert v-else-if="!emailVerificationEnabled" variant="destructive" class="text-center">
           <AlertDescription class="block">
             <p class="text-sm font-medium">{{ t('auth.forgot.disabled') }}</p>
             <RouterLink to="/auth/login" class="mt-3 inline-block text-sm text-muted-foreground transition-colors hover:text-foreground">{{ t('auth.forgot.backLogin') }}</RouterLink>
@@ -101,11 +102,12 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { useForgot } from '../../../composables/useForgot'
+import IdentityManagementNotice from '../../../components/security/IdentityManagementNotice.vue'
 
 const { t } = useI18n()
 
 const {
-  userAuthStore, brandSiteName, emailVerificationEnabled,
+  userAuthStore, brandSiteName, emailVerificationEnabled, unifiedAuthOnly, passwordResetURL,
   email, code, newPassword, error, sending, countdown,
   captchaPayload, turnstileToken, imageCaptchaRef, turnstileRef,
   captchaProvider, sendCodeCaptchaEnabled, turnstileSiteKey,

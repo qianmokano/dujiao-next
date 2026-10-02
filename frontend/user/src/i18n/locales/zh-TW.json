@@ -359,6 +359,8 @@
       "saveSuccess": "資料已更新"
     },
     "security": {
+      "unifiedIdentityHint": "密碼、身分信箱與兩步驗證由統一帳號管理。",
+      "manageUnifiedIdentity": "管理統一帳號",
       "title": "安全中心",
       "subtitle": "透過雙驗證碼流程完成信箱更換",
       "subtitleBindOnly": "目前帳號尚未綁定真實信箱，請先完成信箱綁定",

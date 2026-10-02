@@ -312,6 +312,8 @@
       "saveSuccess": "资料已更新"
     },
     "security": {
+      "unifiedIdentityHint": "密码、身份邮箱和二步验证由统一账户管理。",
+      "manageUnifiedIdentity": "管理统一账户",
       "title": "安全中心",
       "subtitle": "通过双验证码流程完成邮箱换绑",
       "subtitleBindOnly": "当前账号未绑定真实邮箱，请先完成邮箱绑定",

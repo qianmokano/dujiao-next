@@ -263,6 +263,11 @@ func (s *Service) validateGoogleRedirectHandoffRuntime(handoff *GoogleRedirectHa
 }
 
 func (s *Service) validateGoogleRedirectDependencies() error {
+	if s != nil {
+		if err := s.requireLocalIdentityManagement(); err != nil {
+			return err
+		}
+	}
 	if s == nil || s.googleAuthService == nil {
 		return googleauthapp.ErrGoogleAuthConfigInvalid
 	}

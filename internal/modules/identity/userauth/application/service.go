@@ -72,6 +72,13 @@ func (s *Service) SetOIDCAuthService(service *oidcauthapp.Service) {
 	s.oidcAuthService = service
 }
 
+func (s *Service) requireLocalIdentityManagement() error {
+	if s.oidcAuthService.OnlyEnabled() {
+		return ErrUnifiedAuthRequired
+	}
+	return nil
+}
+
 // SetGoogleRedirectStore injects the Redis-backed single-use state store used
 // only by the redirect UX. Popup Google login remains independent of Redis.
 func (s *Service) SetGoogleRedirectStore(store GoogleRedirectStore) {
@@ -201,6 +208,9 @@ func (s *Service) ParseUserJWT(tokenString string) (*UserJWTClaims, error) {
 
 // SendVerifyCode 发送邮箱验证码
 func (s *Service) SendVerifyCode(ctx context.Context, email, purpose, locale string) error {
+	if err := s.requireLocalIdentityManagement(); err != nil {
+		return err
+	}
 	if s.emailService == nil {
 		return ErrEmailServiceNotConfigured
 	}
@@ -268,6 +278,9 @@ func (s *Service) checkRegistrationEmailDomain(email string) error {
 
 // Register 用户注册
 func (s *Service) Register(email, password, code string, agreementAccepted bool, emailVerificationEnabled bool) (*userdomain.User, string, time.Time, error) {
+	if err := s.requireLocalIdentityManagement(); err != nil {
+		return nil, "", time.Time{}, err
+	}
 	if !agreementAccepted {
 		return nil, "", time.Time{}, ErrAgreementRequired
 	}
@@ -338,6 +351,9 @@ func (s *Service) Register(email, password, code string, agreementAccepted bool,
 
 // LoginStep1 用户密码登录第一步：校验密码，根据是否启用 2FA 返回 challenge token 或正式 JWT。
 func (s *Service) LoginStep1(email, password string, rememberMe bool) (*UserLoginResult, error) {
+	if err := s.requireLocalIdentityManagement(); err != nil {
+		return nil, err
+	}
 	normalized, err := normalizeEmail(email)
 	if err != nil {
 		return nil, err
@@ -435,6 +451,8 @@ func normalizeLoginSource(source string) string {
 		return constants.LoginLogSourceGoogle
 	case constants.LoginLogSourceTelegram:
 		return constants.LoginLogSourceTelegram
+	case constants.LoginLogSourceOIDC:
+		return constants.LoginLogSourceOIDC
 	default:
 		return constants.LoginLogSourceWeb
 	}
@@ -456,6 +474,9 @@ func (s *Service) ParseUserChallengeToken(tokenString string) (*UserChallengeCla
 	if claims.Purpose != challenge.PurposeTwoFactor || claims.Typ != jwttoken.TypeTwoFactorChallenge {
 		return nil, errors.New("invalid challenge purpose")
 	}
+	if s.oidcAuthService.OnlyEnabled() && claims.LoginSource != constants.LoginLogSourceOIDC {
+		return nil, ErrUnifiedAuthRequired
+	}
 	return claims, nil
 }
 
@@ -467,6 +488,9 @@ func (s *Service) CompleteLoginAfter2FA(userID uint, rememberMe bool) (*UserLogi
 	}
 	if user == nil {
 		return nil, ErrNotFound
+	}
+	if strings.ToLower(strings.TrimSpace(user.Status)) != constants.UserStatusActive {
+		return nil, ErrUserDisabled
 	}
 	expireHours := resolveUserJWTExpireHours(s.cfg.UserJWT)
 	if rememberMe {

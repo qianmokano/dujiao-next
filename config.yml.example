@@ -74,6 +74,9 @@ google_auth:
 
 oidc_auth:
   enabled: false
+  # 仅允许客户使用统一账户认证及凭据管理，独立管理员后台仍可本地登录。
+  # 开启前需启用并配置 OIDC；此策略也可在后台设置并即时生效。
+  only_enabled: false
   # 通用 OIDC 单点登录（对接 Casdoor 等标准 OIDC 提供方）。
   # 在 IdP 侧为本商城创建应用后填写：
   issuer: ""         # IdP 根地址，形如 https://auth.example.com（不带末尾斜杠）

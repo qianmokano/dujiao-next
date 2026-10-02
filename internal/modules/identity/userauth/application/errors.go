@@ -3,6 +3,7 @@ package application
 import "errors"
 
 var (
+	ErrUnifiedAuthRequired          = errors.New("unified authentication required")
 	ErrNotFound                     = errors.New("user not found")
 	ErrInvalidCredentials           = errors.New("invalid credentials")
 	ErrInvalidPassword              = errors.New("invalid password")

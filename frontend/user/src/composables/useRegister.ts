@@ -10,6 +10,7 @@ import type { CaptchaPayload } from '../api'
 import ImageCaptcha from '../components/captcha/ImageCaptcha.vue'
 import TurnstileCaptcha from '../components/captcha/TurnstileCaptcha.vue'
 import { useFormValidation, getPasswordStrength } from './useFormValidation'
+import { useOIDCCredentials } from '../utils/unifiedAuth'
 
 /**
  * 用户注册页共享逻辑（classic + vault 双模板共用）。
@@ -50,7 +51,7 @@ export function useRegister() {
   const sendCodeCaptchaEnabled = computed(() => !!captchaConfig.value?.scenes?.register_send_code && captchaProvider.value !== 'none')
   const turnstileSiteKey = computed(() => String(captchaConfig.value?.turnstile?.site_key || ''))
   const registrationEnabled = computed(() => appStore.config?.registration_enabled !== false)
-  const ssoOnlyMode = computed(() => !!(appStore.config as any)?.oidc_auth?.enabled)
+  const ssoOnlyMode = computed(() => useOIDCCredentials(appStore.config?.oidc_auth, undefined))
   const emailVerificationEnabled = computed(() => appStore.config?.email_verification_enabled !== false)
   const emailDomainAllowlistEnabled = computed(() => appStore.config?.email_domain_allowlist_enabled === true)
   const allowedEmailDomains = computed(() => {

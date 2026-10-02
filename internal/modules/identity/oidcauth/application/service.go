@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rsa"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -62,6 +63,7 @@ type oidcDiscoveryDocument struct {
 
 // Service 实现面向任意 OIDC 提供方（本部署为 Casdoor）的授权码 + PKCE 客户端。
 type Service struct {
+	cfgMu       sync.RWMutex
 	cfg         config.OIDCAuthConfig
 	replaySetNX ReplaySetNXFunc
 
@@ -99,7 +101,9 @@ func (s *Service) SetConfig(cfg config.OIDCAuthConfig) {
 	if s == nil {
 		return
 	}
+	s.cfgMu.Lock()
 	s.cfg = normalizeConfig(cfg)
+	s.cfgMu.Unlock()
 	s.discoveryMu.Lock()
 	s.discovery = nil
 	s.discoveryFetchedAt = time.Time{}
@@ -115,19 +119,42 @@ func (s *Service) PublicConfig() map[string]interface{} {
 	if s == nil {
 		return map[string]interface{}{"enabled": false, "display_name": ""}
 	}
-	cfg := normalizeConfig(s.cfg)
+	cfg := s.currentConfig()
 	enabled := cfg.Enabled && settingssecurity.OIDCEndpointsReady(settingssecurity.OIDCAuthSetting{
 		Enabled: cfg.Enabled, Issuer: cfg.Issuer, ClientID: cfg.ClientID,
 		ClientSecret: cfg.ClientSecret, RedirectURI: cfg.RedirectURI,
 	})
+	applicationName := cfg.ApplicationID
+	if index := strings.LastIndex(applicationName, "/"); index >= 0 {
+		applicationName = applicationName[index+1:]
+	}
 	return map[string]interface{}{
-		"enabled":      enabled,
-		"display_name": cfg.DisplayName,
+		"enabled":            enabled,
+		"only_enabled":       cfg.OnlyEnabled,
+		"display_name":       cfg.DisplayName,
+		"account_url":        identityPageURL(cfg, "login", cfg.Organization),
+		"password_reset_url": identityPageURL(cfg, "forget", applicationName),
 	}
 }
 
+// OnlyEnabled reads the policy independently of provider availability so a
+// disabled or unavailable IdP cannot reopen local authentication.
+func (s *Service) OnlyEnabled() bool {
+	return s != nil && s.currentConfig().OnlyEnabled
+}
+
 func (s *Service) currentConfig() config.OIDCAuthConfig {
+	s.cfgMu.RLock()
+	defer s.cfgMu.RUnlock()
 	return normalizeConfig(s.cfg)
+}
+
+func identityPageURL(cfg config.OIDCAuthConfig, page, name string) string {
+	issuer, err := url.Parse(cfg.Issuer)
+	if err != nil || (issuer.Scheme != "http" && issuer.Scheme != "https") || issuer.Host == "" || name == "" {
+		return ""
+	}
+	return cfg.Issuer + "/" + page + "/" + url.PathEscape(name)
 }
 
 func normalizeConfig(cfg config.OIDCAuthConfig) config.OIDCAuthConfig {
@@ -136,5 +163,7 @@ func normalizeConfig(cfg config.OIDCAuthConfig) config.OIDCAuthConfig {
 	cfg.ClientSecret = strings.TrimSpace(cfg.ClientSecret)
 	cfg.RedirectURI = strings.TrimRight(strings.TrimSpace(cfg.RedirectURI), "/")
 	cfg.DisplayName = strings.TrimSpace(cfg.DisplayName)
+	cfg.ApplicationID = strings.TrimSpace(cfg.ApplicationID)
+	cfg.Organization = strings.TrimSpace(cfg.Organization)
 	return cfg
 }

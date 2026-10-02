@@ -16,6 +16,7 @@ var ErrOIDCAuthConfigInvalid = errors.New("oidc auth config invalid")
 // OIDCAuthSetting 通用 OIDC（单点登录）配置实体。
 type OIDCAuthSetting struct {
 	Enabled      bool   `json:"enabled"`
+	OnlyEnabled  bool   `json:"only_enabled"`
 	Issuer       string `json:"issuer"`
 	ClientID     string `json:"client_id"`
 	ClientSecret string `json:"client_secret"`
@@ -29,6 +30,7 @@ type OIDCAuthSetting struct {
 // OIDCAuthSettingPatch 通用 OIDC 配置补丁。
 type OIDCAuthSettingPatch struct {
 	Enabled       *bool   `json:"enabled"`
+	OnlyEnabled   *bool   `json:"only_enabled"`
 	Issuer        *string `json:"issuer"`
 	ClientID      *string `json:"client_id"`
 	ClientSecret  *string `json:"client_secret"`
@@ -42,6 +44,7 @@ type OIDCAuthSettingPatch struct {
 func DefaultOIDCAuthSetting(cfg config.OIDCAuthConfig) OIDCAuthSetting {
 	return NormalizeOIDCAuthSetting(OIDCAuthSetting{
 		Enabled:       cfg.Enabled,
+		OnlyEnabled:   cfg.OnlyEnabled,
 		Issuer:        strings.TrimSpace(cfg.Issuer),
 		ClientID:      strings.TrimSpace(cfg.ClientID),
 		ClientSecret:  strings.TrimSpace(cfg.ClientSecret),
@@ -76,6 +79,9 @@ func OIDCEndpointsReady(setting OIDCAuthSetting) bool {
 // ValidateOIDCAuthSetting 校验通用 OIDC 配置合法性。
 func ValidateOIDCAuthSetting(setting OIDCAuthSetting) error {
 	normalized := NormalizeOIDCAuthSetting(setting)
+	if normalized.OnlyEnabled && !normalized.Enabled {
+		return fmt.Errorf("%w: 仅统一登录需要启用 OIDC", ErrOIDCAuthConfigInvalid)
+	}
 	if !normalized.Enabled {
 		return nil
 	}
@@ -117,6 +123,9 @@ func ApplyOIDCAuthSettingPatch(current OIDCAuthSetting, patch OIDCAuthSettingPat
 	if patch.Enabled != nil {
 		next.Enabled = *patch.Enabled
 	}
+	if patch.OnlyEnabled != nil {
+		next.OnlyEnabled = *patch.OnlyEnabled
+	}
 	if patch.Issuer != nil {
 		next.Issuer = strings.TrimSpace(*patch.Issuer)
 	}
@@ -148,6 +157,7 @@ func OIDCAuthSettingToConfig(setting OIDCAuthSetting) config.OIDCAuthConfig {
 	normalized := NormalizeOIDCAuthSetting(setting)
 	return config.OIDCAuthConfig{
 		Enabled:       normalized.Enabled,
+		OnlyEnabled:   normalized.OnlyEnabled,
 		Issuer:        normalized.Issuer,
 		ClientID:      normalized.ClientID,
 		ClientSecret:  normalized.ClientSecret,
@@ -163,6 +173,7 @@ func EncodeOIDCAuthSetting(setting OIDCAuthSetting) jsonmap.JSON {
 	normalized := NormalizeOIDCAuthSetting(setting)
 	return jsonmap.JSON{
 		"enabled":        normalized.Enabled,
+		"only_enabled":   normalized.OnlyEnabled,
 		"issuer":         normalized.Issuer,
 		"client_id":      normalized.ClientID,
 		"client_secret":  normalized.ClientSecret,
@@ -178,6 +189,7 @@ func MaskOIDCAuthSettingForAdmin(setting OIDCAuthSetting) jsonmap.JSON {
 	normalized := NormalizeOIDCAuthSetting(setting)
 	return jsonmap.JSON{
 		"enabled":           normalized.Enabled,
+		"only_enabled":      normalized.OnlyEnabled,
 		"issuer":            normalized.Issuer,
 		"client_id":         normalized.ClientID,
 		"client_secret":     "",
@@ -197,6 +209,9 @@ func DecodeOIDCAuthSetting(raw jsonmap.JSON, fallback OIDCAuthSetting) OIDCAuthS
 	}
 	if value, exists := raw["enabled"]; exists {
 		next.Enabled = settingsvalue.ParseBool(value)
+	}
+	if value, exists := raw["only_enabled"]; exists {
+		next.OnlyEnabled = settingsvalue.ParseBool(value)
 	}
 	for key, target := range map[string]*string{
 		"issuer":         &next.Issuer,

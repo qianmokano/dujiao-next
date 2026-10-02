@@ -291,6 +291,7 @@ const googleForm = reactive({
 
 const oidcForm = reactive({
   enabled: false,
+  only_enabled: false,
   issuer: '',
   client_id: '',
   client_secret: '',
@@ -555,6 +556,7 @@ const fetchSettings = async () => {
     if (oidcRes.data && oidcRes.data.data) {
       const oidc = oidcRes.data.data as Record<string, unknown>
       oidcForm.enabled = !!oidc.enabled
+      oidcForm.only_enabled = !!oidc.only_enabled
       oidcForm.issuer = String(oidc.issuer || '')
       oidcForm.client_id = String(oidc.client_id || '')
       oidcForm.client_secret = ''
@@ -757,6 +759,7 @@ const saveGoogleAuthSettings = async () => {
 const saveOIDCAuthSettings = async () => {
   const payload: Record<string, unknown> = {
     enabled: oidcForm.enabled,
+    only_enabled: oidcForm.only_enabled,
     issuer: oidcForm.issuer.trim(),
     client_id: oidcForm.client_id.trim(),
     redirect_uri: oidcForm.redirect_uri.trim(),
@@ -770,6 +773,7 @@ const saveOIDCAuthSettings = async () => {
   const res = await adminAPI.updateOIDCAuthSettings(payload)
   const data = res.data?.data as Record<string, unknown> | undefined
   oidcForm.enabled = !!data?.enabled
+  oidcForm.only_enabled = !!data?.only_enabled
   oidcForm.issuer = String(data?.issuer || '')
   oidcForm.client_id = String(data?.client_id || '')
   oidcForm.client_secret = ''
@@ -1578,6 +1582,13 @@ onMounted(() => {
             <div class="flex flex-col gap-3 rounded-lg border border-border bg-muted/20 px-4 py-3 sm:flex-row sm:items-center">
               <Switch id="oidc-auth-enabled" v-model="oidcForm.enabled" />
               <Label for="oidc-auth-enabled" class="text-sm font-medium">{{ t('admin.settings.oidc.enabled') }}</Label>
+            </div>
+            <div class="space-y-2">
+              <div class="flex items-center gap-3">
+                <Switch id="oidc-only-enabled" v-model="oidcForm.only_enabled" />
+                <Label for="oidc-only-enabled" class="text-sm font-medium">{{ t('admin.settings.oidc.onlyEnabled') }}</Label>
+              </div>
+              <p class="text-xs text-muted-foreground">{{ t('admin.settings.oidc.onlyEnabledHint') }}</p>
             </div>
 
             <div class="space-y-2">

@@ -25,6 +25,9 @@ type LoginWithTelegramMiniAppInput struct {
 
 // LoginWithTelegram Telegram 登录（已启用 2FA 的账号会返回挑战 token，不直接发 JWT）
 func (s *Service) LoginWithTelegram(input LoginWithTelegramInput) (*UserLoginResult, error) {
+	if err := s.requireLocalIdentityManagement(); err != nil {
+		return nil, err
+	}
 	if s.telegramAuthService == nil || s.userOAuthIdentityRepo == nil {
 		return nil, telegramauthapp.ErrTelegramAuthConfigInvalid
 	}
@@ -41,6 +44,9 @@ func (s *Service) LoginWithTelegram(input LoginWithTelegramInput) (*UserLoginRes
 
 // LoginWithTelegramMiniApp Telegram Mini App 登录（已启用 2FA 的账号会返回挑战 token，不直接发 JWT）
 func (s *Service) LoginWithTelegramMiniApp(input LoginWithTelegramMiniAppInput) (*UserLoginResult, error) {
+	if err := s.requireLocalIdentityManagement(); err != nil {
+		return nil, err
+	}
 	if s.telegramAuthService == nil || s.userOAuthIdentityRepo == nil {
 		return nil, telegramauthapp.ErrTelegramAuthConfigInvalid
 	}
@@ -58,6 +64,9 @@ func (s *Service) LoginWithTelegramMiniApp(input LoginWithTelegramMiniAppInput) 
 // LoginVerifiedTelegram completes a login after a trusted Telegram verifier
 // has authenticated and normalized the upstream identity.
 func (s *Service) LoginVerifiedTelegram(verified *telegramauthapp.IdentityVerified) (*UserLoginResult, error) {
+	if err := s.requireLocalIdentityManagement(); err != nil {
+		return nil, err
+	}
 	identity, err := s.getTelegramIdentityByVerifiedID(verified)
 	if err != nil {
 		return nil, err

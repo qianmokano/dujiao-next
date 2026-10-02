@@ -31,6 +31,9 @@ type BindTelegramOIDCInput struct {
 
 // StartTelegramOIDC 生成 Telegram OIDC 授权 URL
 func (s *Service) StartTelegramOIDC(input StartTelegramOIDCInput) (string, error) {
+	if err := s.requireLocalIdentityManagement(); err != nil {
+		return "", err
+	}
 	if s.telegramAuthService == nil {
 		return "", telegramauthapp.ErrTelegramAuthConfigInvalid
 	}

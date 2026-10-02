@@ -39,6 +39,11 @@ type BindOIDCInput struct {
 
 // StartOIDC 生成通用 OIDC 授权 URL
 func (s *Service) StartOIDC(input StartOIDCInput) (string, error) {
+	if input.Intent == oidcauthapp.LoginIntentBind {
+		if err := s.requireLocalIdentityManagement(); err != nil {
+			return "", err
+		}
+	}
 	if s.oidcAuthService == nil {
 		return "", oidcauthapp.ErrOIDCAuthConfigInvalid
 	}
@@ -74,6 +79,9 @@ func (s *Service) LoginWithOIDC(input LoginWithOIDCInput) (*UserLoginResult, err
 
 // BindOIDC 通过通用 OIDC 回调绑定当前用户
 func (s *Service) BindOIDC(input BindOIDCInput) (*externalidentitydomain.Identity, error) {
+	if err := s.requireLocalIdentityManagement(); err != nil {
+		return nil, err
+	}
 	if input.UserID == 0 {
 		return nil, ErrNotFound
 	}
@@ -96,6 +104,9 @@ func (s *Service) BindOIDC(input BindOIDCInput) (*externalidentitydomain.Identit
 
 // loginVerifiedOIDC 完成通用 OIDC 登录：已有绑定则落回原账号，否则按邮箱关联/建号。
 func (s *Service) loginVerifiedOIDC(verified *oidcauthapp.IdentityVerified) (*UserLoginResult, error) {
+	if verified == nil || verified.Provider == "" || strings.TrimSpace(verified.ProviderUserID) == "" {
+		return nil, oidcauthapp.ErrOIDCPayloadInvalid
+	}
 	identity, err := s.userOAuthIdentityRepo.GetByProviderUserID(verified.Provider, verified.ProviderUserID)
 	if err != nil {
 		return nil, err
@@ -111,6 +122,9 @@ func (s *Service) loginVerifiedOIDC(verified *oidcauthapp.IdentityVerified) (*Us
 			if err := s.userOAuthIdentityRepo.Update(identity); err != nil {
 				return nil, err
 			}
+		}
+		if err := s.syncOIDCEmailVerification(user, verified); err != nil {
+			return nil, err
 		}
 		return s.completeExternalLogin(user, constants.LoginLogSourceOIDC)
 	}
@@ -140,7 +154,13 @@ func (s *Service) loginVerifiedOIDC(verified *oidcauthapp.IdentityVerified) (*Us
 		if err != nil {
 			return nil, err
 		}
+		if err := s.syncOIDCEmailVerification(user, verified); err != nil {
+			return nil, err
+		}
 		return s.completeExternalLogin(user, constants.LoginLogSourceOIDC)
+	}
+	if err := s.syncOIDCEmailVerification(user, verified); err != nil {
+		return nil, err
 	}
 	return s.completeExternalLogin(user, constants.LoginLogSourceOIDC)
 }
@@ -148,11 +168,11 @@ func (s *Service) loginVerifiedOIDC(verified *oidcauthapp.IdentityVerified) (*Us
 // findOrCreateOIDCUser 按邮箱找已有用户；不存在则直接建号。
 // SSO 是本部署唯一的注册入口：IdP（自有 Casdoor）注册时已强制邮箱验证码，
 // 因此这里有意不检查站点注册开关——关闭本地注册不影响经 IdP 的新用户建号。
-// 首登即与同邮箱本地账号合并。
+// 只有已验证邮箱可以首次关联；不同 subject 不得覆盖已有同提供方绑定。
 func (s *Service) findOrCreateOIDCUser(verified *oidcauthapp.IdentityVerified) (*userdomain.User, bool, error) {
-	email := strings.TrimSpace(verified.Email)
-	if email == "" {
-		email = buildOIDCPlaceholderEmail(verified.ProviderUserID)
+	email, err := normalizeUserSuppliedEmail(verified.Email)
+	if err != nil || !verified.EmailVerified {
+		return nil, false, ErrEmailNotVerified
 	}
 
 	user, err := s.userRepo.GetByEmail(email)
@@ -162,6 +182,13 @@ func (s *Service) findOrCreateOIDCUser(verified *oidcauthapp.IdentityVerified) (
 	if user != nil {
 		if strings.ToLower(strings.TrimSpace(user.Status)) != constants.UserStatusActive {
 			return nil, false, ErrUserDisabled
+		}
+		bound, err := s.userOAuthIdentityRepo.GetByUserProvider(user.ID, verified.Provider)
+		if err != nil {
+			return nil, false, err
+		}
+		if bound != nil && bound.ProviderUserID != verified.ProviderUserID {
+			return nil, false, ErrUserOAuthIdentityExists
 		}
 		return user, false, nil
 	}
@@ -183,6 +210,7 @@ func (s *Service) findOrCreateOIDCUser(verified *oidcauthapp.IdentityVerified) (
 		PasswordSetupRequired: true,
 		DisplayName:           resolveOIDCDisplayName(verified, email),
 		Status:                constants.UserStatusActive,
+		EmailVerifiedAt:       &now,
 		LastLoginAt:           &now,
 		CreatedAt:             now,
 		UpdatedAt:             now,
@@ -206,6 +234,20 @@ func (s *Service) findOrCreateOIDCUser(verified *oidcauthapp.IdentityVerified) (
 		}
 	}
 	return user, true, nil
+}
+
+func (s *Service) syncOIDCEmailVerification(user *userdomain.User, verified *oidcauthapp.IdentityVerified) error {
+	if user.EmailVerifiedAt != nil || !verified.EmailVerified {
+		return nil
+	}
+	email, err := normalizeUserSuppliedEmail(verified.Email)
+	if err != nil || email != strings.ToLower(strings.TrimSpace(user.Email)) {
+		return nil
+	}
+	now := time.Now()
+	user.EmailVerifiedAt = &now
+	user.UpdatedAt = now
+	return s.userRepo.Update(user)
 }
 
 func resolveOIDCDisplayName(verified *oidcauthapp.IdentityVerified, email string) string {
@@ -314,6 +356,9 @@ func (s *Service) bindVerifiedOIDC(userID uint, verified *oidcauthapp.IdentityVe
 
 // UnbindOIDC 解绑通用 OIDC
 func (s *Service) UnbindOIDC(userID uint) error {
+	if err := s.requireLocalIdentityManagement(); err != nil {
+		return err
+	}
 	if err := s.unbindExternalIdentity(userID, constants.UserOAuthProviderOIDC); err != nil {
 		if err == errExternalIdentityUnbindLocked {
 			return ErrOIDCUnbindRequiresLocalLogin

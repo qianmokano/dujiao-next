@@ -16,6 +16,7 @@ const (
 
 var messages = map[string]map[string]string{
 	LocaleZH: {
+		"error.unified_auth_required":                    "请通过统一账户登录或管理身份凭据",
 		"error.jwt_secret_missing":                       "JWT secret 未配置",
 		"error.auth_header_missing":                      "缺少 Authorization header",
 		"error.auth_header_invalid":                      "Authorization header 格式错误",
@@ -394,6 +395,7 @@ var messages = map[string]map[string]string{
 		"error.invalid_product_status":           "无效的商品状态参数",
 	},
 	LocaleTW: {
+		"error.unified_auth_required":                    "請透過統一帳號登入或管理身分憑證",
 		"error.jwt_secret_missing":                       "JWT secret 未配置",
 		"error.auth_header_missing":                      "缺少 Authorization header",
 		"error.auth_header_invalid":                      "Authorization header 格式錯誤",
@@ -772,6 +774,7 @@ var messages = map[string]map[string]string{
 		"error.invalid_product_status":           "無效的商品狀態參數",
 	},
 	LocaleEN: {
+		"error.unified_auth_required":                    "Sign in or manage identity credentials through your unified account",
 		"error.jwt_secret_missing":                       "JWT secret is not configured",
 		"error.auth_header_missing":                      "Missing Authorization header",
 		"error.auth_header_invalid":                      "Invalid Authorization header format",

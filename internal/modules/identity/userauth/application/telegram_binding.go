@@ -68,6 +68,9 @@ func (s *Service) BindTelegramMiniApp(input BindTelegramMiniAppInput) (*external
 }
 
 func (s *Service) bindVerifiedTelegram(userID uint, verified *telegramauthapp.IdentityVerified) (*externalidentitydomain.Identity, error) {
+	if err := s.requireLocalIdentityManagement(); err != nil {
+		return nil, err
+	}
 	if _, err := s.getActiveUserByID(userID); err != nil {
 		return nil, err
 	}

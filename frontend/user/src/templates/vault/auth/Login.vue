@@ -152,11 +152,12 @@
           </div>
 
           <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-            <label class="inline-flex items-center gap-2">
+            <label v-if="!ssoOnlyMode" class="inline-flex items-center gap-2">
               <input v-model="rememberMe" type="checkbox" class="h-4 w-4 accent-[var(--ui-accent)]" />
               {{ t('auth.login.rememberMe') }}
             </label>
-            <RouterLink v-if="emailVerificationEnabled" to="/auth/forgot" class="font-medium text-muted-foreground transition-colors hover:text-primary">
+            <a v-if="ssoOnlyMode && passwordResetURL" :href="passwordResetURL" class="font-medium text-muted-foreground transition-colors hover:text-primary">{{ t('auth.login.forgot') }}</a>
+            <RouterLink v-else-if="!ssoOnlyMode && emailVerificationEnabled" to="/auth/forgot" class="font-medium text-muted-foreground transition-colors hover:text-primary">
               {{ t('auth.login.forgot') }}
             </RouterLink>
           </div>
@@ -252,7 +253,7 @@ const {
   showMiniAppLoginHint, attemptingMiniAppLogin, showTelegramMiniAppEntry, openTelegramMiniAppEntry,
   googleClientID, googleButtonLocale, googleIdentityUXMode, googleRedirectLoginURI,
   prepareGoogleRedirectLogin, showGoogleLogin, showThirdPartyLogin,
-  showOidcLogin, oidcDisplayName, startOidcLogin, ssoOnlyMode,
+  showOidcLogin, oidcDisplayName, startOidcLogin, ssoOnlyMode, passwordResetURL,
   ssoMfaChallenge, ssoMfaType, ssoMfaCode, performSsoMfa, cancelSsoMfa,
   handleGoogleCredential, handleGoogleScriptError,
   handleLogin,
