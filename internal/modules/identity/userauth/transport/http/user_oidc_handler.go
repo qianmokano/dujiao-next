@@ -102,6 +102,8 @@ func respondOIDCError(c *gin.Context, err error) {
 		ginutil.RespondError(c, response.CodeInternal, "error.oidc_remote_rejected", err)
 	case errors.Is(err, ErrUserDisabled):
 		ginutil.RespondError(c, response.CodeUnauthorized, "error.user_disabled", nil)
+	case errors.Is(err, ErrEmailNotVerified):
+		ginutil.RespondError(c, response.CodeForbidden, "error.email_not_verified", nil)
 	case errors.Is(err, ErrRegistrationDisabled):
 		ginutil.RespondError(c, response.CodeForbidden, "error.registration_disabled", nil)
 	default:

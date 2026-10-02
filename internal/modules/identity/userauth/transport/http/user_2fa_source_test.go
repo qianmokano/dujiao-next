@@ -83,7 +83,7 @@ func (r *sourceTestLoginRecorder) Record(_ string, _ uint, status, _, source, _,
 
 func TestVerifyUser2FAPreservesExternalLoginSource(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	for _, source := range []string{constants.LoginLogSourceGoogle, constants.LoginLogSourceTelegram} {
+	for _, source := range []string{constants.LoginLogSourceGoogle, constants.LoginLogSourceTelegram, constants.LoginLogSourceOIDC} {
 		t.Run(source, func(t *testing.T) {
 			loginRecorder := &sourceTestLoginRecorder{}
 			handler := NewUser2FAHandler(

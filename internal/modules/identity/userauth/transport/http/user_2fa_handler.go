@@ -352,6 +352,8 @@ func resolvedChallengeLoginSource(claims *UserChallengeClaims) string {
 		return constants.LoginLogSourceGoogle
 	case constants.LoginLogSourceTelegram:
 		return constants.LoginLogSourceTelegram
+	case constants.LoginLogSourceOIDC:
+		return constants.LoginLogSourceOIDC
 	default:
 		return constants.LoginLogSourceWeb
 	}

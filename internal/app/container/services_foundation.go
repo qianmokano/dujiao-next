@@ -90,6 +90,8 @@ func (c *Container) loadRuntimeSettings() {
 	if err != nil {
 		// 同 Google：数据库是管理事实源，读取失败不得回退到已启用的 YAML 配置。
 		c.Config.OIDCAuth.Enabled = false
+		// A failed policy read must not silently reopen customer credentials.
+		c.Config.OIDCAuth.OnlyEnabled = true
 		logger.Warnw("provider_load_oidc_auth_setting_failed", "error", err)
 	} else {
 		c.Config.OIDCAuth = settingssecurity.OIDCAuthSettingToConfig(oidcAuthSetting)

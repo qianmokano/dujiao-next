@@ -51,6 +51,11 @@ type GoogleBinding struct {
 // LoginWithGoogle verifies a Google ID token and completes the normal JWT/2FA
 // login flow.
 func (s *Service) LoginWithGoogle(input LoginWithGoogleInput) (*UserLoginResult, error) {
+	if s != nil {
+		if err := s.requireLocalIdentityManagement(); err != nil {
+			return nil, err
+		}
+	}
 	if s == nil || s.googleAuthService == nil || s.userOAuthIdentityRepo == nil || s.authUnitOfWork == nil {
 		return nil, googleauthapp.ErrGoogleAuthConfigInvalid
 	}
@@ -72,6 +77,11 @@ func (s *Service) LoginVerifiedGoogle(verified *googleauthapp.VerifiedIdentity) 
 }
 
 func (s *Service) loginVerifiedGoogle(ctx context.Context, verified *googleauthapp.VerifiedIdentity) (*UserLoginResult, error) {
+	if s != nil {
+		if err := s.requireLocalIdentityManagement(); err != nil {
+			return nil, err
+		}
+	}
 	if s == nil || s.userOAuthIdentityRepo == nil || s.authUnitOfWork == nil {
 		return nil, googleauthapp.ErrGoogleAuthConfigInvalid
 	}
@@ -360,6 +370,11 @@ func newGoogleUser(verified *googleauthapp.VerifiedIdentity) (*userdomain.User, 
 
 // BindGoogle verifies and binds a Google credential to the authenticated user.
 func (s *Service) BindGoogle(input BindGoogleInput) (*GoogleBinding, error) {
+	if s != nil {
+		if err := s.requireLocalIdentityManagement(); err != nil {
+			return nil, err
+		}
+	}
 	if input.UserID == 0 {
 		return nil, ErrNotFound
 	}
@@ -387,6 +402,11 @@ func (s *Service) bindVerifiedGoogle(
 	userID uint,
 	verified *googleauthapp.VerifiedIdentity,
 ) (*GoogleBinding, error) {
+	if s != nil {
+		if err := s.requireLocalIdentityManagement(); err != nil {
+			return nil, err
+		}
+	}
 	if userID == 0 {
 		return nil, ErrNotFound
 	}
@@ -494,6 +514,9 @@ func (s *Service) UnbindGoogle(userID uint) error {
 }
 
 func (s *Service) unbindExternalIdentity(userID uint, provider string) error {
+	if err := s.requireLocalIdentityManagement(); err != nil {
+		return err
+	}
 	if userID == 0 {
 		return ErrNotFound
 	}
@@ -586,6 +609,9 @@ func (s *Service) isUsableExternalIdentity(identity *externalidentitydomain.Iden
 }
 
 func (s *Service) completeExternalLogin(user *userdomain.User, source string) (*UserLoginResult, error) {
+	if s.oidcAuthService.OnlyEnabled() && source != constants.LoginLogSourceOIDC {
+		return nil, ErrUnifiedAuthRequired
+	}
 	if user == nil {
 		return nil, ErrNotFound
 	}

@@ -121,6 +121,7 @@ type GoogleAuthConfig struct {
 // OIDCAuthConfig 通用 OIDC 单点登录配置（对接 Casdoor 等标准 OIDC 提供方）。
 type OIDCAuthConfig struct {
 	Enabled      bool   `mapstructure:"enabled"`
+	OnlyEnabled  bool   `mapstructure:"only_enabled"`
 	Issuer       string `mapstructure:"issuer"`        // 形如 https://auth.example.com
 	ClientID     string `mapstructure:"client_id"`     // OIDC Client ID
 	ClientSecret string `mapstructure:"client_secret"` // OIDC Client Secret（敏感）

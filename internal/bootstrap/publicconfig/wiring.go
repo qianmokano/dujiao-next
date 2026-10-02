@@ -41,6 +41,7 @@ func NewHandler(c *container.Container) *publicconfigtransport.Handler {
 		}
 		oidcFallback = publicconfigtransport.OIDCAuthFallback{
 			Enabled:     c.Config.OIDCAuth.Enabled,
+			OnlyEnabled: c.Config.OIDCAuth.OnlyEnabled,
 			DisplayName: c.Config.OIDCAuth.DisplayName,
 		}
 	}

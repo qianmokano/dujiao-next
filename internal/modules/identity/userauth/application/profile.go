@@ -17,6 +17,9 @@ import (
 
 // ResetPassword 重置密码
 func (s *Service) ResetPassword(email, code, newPassword string) error {
+	if err := s.requireLocalIdentityManagement(); err != nil {
+		return err
+	}
 	normalized, err := normalizeEmail(email)
 	if err != nil {
 		return err
@@ -55,6 +58,9 @@ func (s *Service) ResetPassword(email, code, newPassword string) error {
 
 // ChangePassword 登录态修改密码
 func (s *Service) ChangePassword(userID uint, oldPassword, newPassword string) error {
+	if err := s.requireLocalIdentityManagement(); err != nil {
+		return err
+	}
 	if userID == 0 {
 		return ErrNotFound
 	}
@@ -142,6 +148,9 @@ func (s *Service) UpdateProfile(userID uint, nickname, locale *string) (*userdom
 
 // SendChangeEmailCode 发送更换邮箱验证码
 func (s *Service) SendChangeEmailCode(ctx context.Context, userID uint, kind, newEmail, locale string) error {
+	if err := s.requireLocalIdentityManagement(); err != nil {
+		return err
+	}
 	if s.emailService == nil {
 		return ErrEmailServiceNotConfigured
 	}
@@ -190,6 +199,9 @@ func (s *Service) SendChangeEmailCode(ctx context.Context, userID uint, kind, ne
 
 // ChangeEmail 更换邮箱（旧邮箱/新邮箱双验证）
 func (s *Service) ChangeEmail(userID uint, newEmail, oldCode, newCode string) (*userdomain.User, error) {
+	if err := s.requireLocalIdentityManagement(); err != nil {
+		return nil, err
+	}
 	if userID == 0 {
 		return nil, ErrNotFound
 	}

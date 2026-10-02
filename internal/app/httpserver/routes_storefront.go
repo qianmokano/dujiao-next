@@ -102,6 +102,7 @@ func registerStorefrontRoutes(
 
 	// 用户认证接口
 	auth := storefront.Group("/auth")
+	auth.Use(middleware.UnifiedAuthMiddleware(c.OIDCAuthService.OnlyEnabled))
 	{
 		userauthtransport.RegisterUserVerifyAuthRoutes(auth, userVerifyHandler)
 		userauthtransport.RegisterUserRegisterAuthRoutes(auth, userLoginHandler)
@@ -122,6 +123,7 @@ func registerStorefrontRoutes(
 	// 用户接口（需鉴权）
 	user := storefront.Group("")
 	user.Use(middleware.UserJWTAuthMiddleware(cfg.UserJWT.SecretKey, c.UserStore))
+	user.Use(middleware.UnifiedAuthMiddleware(c.OIDCAuthService.OnlyEnabled))
 	{
 		userauthtransport.RegisterUserProfileRoutes(user, userProfileHandler)
 		auditlogtransport.RegisterUserRoutes(user, userAuditLogHandler)

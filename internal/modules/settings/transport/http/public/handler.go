@@ -80,6 +80,7 @@ type OIDCAuthPublic interface {
 // OIDCAuthFallback 无 OIDCAuthService 时的配置回退。
 type OIDCAuthFallback struct {
 	Enabled     bool
+	OnlyEnabled bool
 	DisplayName string
 }
 
@@ -210,6 +211,7 @@ func (h *Handler) GetConfig(c *gin.Context) {
 	data["google_auth"] = resolveGoogleAuthPublicConfig(h.google, h.googleFallback)
 
 	oidcAuthConfig := map[string]interface{}{
+		"only_enabled": h.oidcFallback.OnlyEnabled,
 		"enabled":      false,
 		"display_name": strings.TrimSpace(h.oidcFallback.DisplayName),
 	}
