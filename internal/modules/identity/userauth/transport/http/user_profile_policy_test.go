@@ -47,7 +47,7 @@ func profilePolicyRouter(service *profilePolicyService) *gin.Engine {
 }
 
 func TestUnifiedProfileFieldPresenceRejectsNullAndMixedRequests(t *testing.T) {
-	for _, field := range []string{"nickname", "email", "password", "avatar_url", "email_verified", "oauth_identities"} {
+	for _, field := range []string{"nickname", "email", "password", "avatar_url", "email_verified", "oauth_identities", "identities", "identity_bindings", "Nickname", "EMAIL", "Avatar_Url"} {
 		t.Run(field, func(t *testing.T) {
 			service := &profilePolicyService{policyErr: ErrUnifiedAuthRequired}
 			recorder := httptest.NewRecorder()

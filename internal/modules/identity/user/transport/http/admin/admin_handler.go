@@ -384,9 +384,12 @@ func (h *AdminHandler) UpdateAdminUser(c *gin.Context) {
 		ginutil.RespondBindError(c, err)
 		return
 	}
-	for _, key := range []string{"nickname", "display_name", "username", "email", "password", "avatar", "avatar_url", "email_verified", "email_verified_at", "oauth_identities", "auth_identities", "auth_bindings", "role"} {
-		if _, exists := fields[key]; exists && !h.allowIdentityEdit(c) {
-			return
+	for key := range fields {
+		switch strings.ToLower(key) {
+		case "nickname", "display_name", "username", "email", "password", "avatar", "avatar_url", "email_verified", "email_verified_at", "oauth_identities", "auth_identities", "auth_bindings", "identities", "identity_bindings", "role":
+			if !h.allowIdentityEdit(c) {
+				return
+			}
 		}
 	}
 
