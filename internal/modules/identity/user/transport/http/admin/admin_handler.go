@@ -384,13 +384,8 @@ func (h *AdminHandler) UpdateAdminUser(c *gin.Context) {
 		ginutil.RespondBindError(c, err)
 		return
 	}
-	for key := range fields {
-		switch strings.ToLower(key) {
-		case "nickname", "display_name", "username", "email", "password", "avatar", "avatar_url", "email_verified", "email_verified_at", "oauth_identities", "auth_identities", "auth_bindings", "identities", "identity_bindings", "role":
-			if !h.allowIdentityEdit(c) {
-				return
-			}
-		}
+	if ginutil.HasJSONField(fields, "nickname", "display_name", "username", "email", "password", "avatar", "avatar_url", "email_verified", "email_verified_at", "oauth_identities", "auth_identities", "auth_bindings", "identities", "identity_bindings", "role") && !h.allowIdentityEdit(c) {
+		return
 	}
 
 	user, err := h.users.GetByID(userID)
