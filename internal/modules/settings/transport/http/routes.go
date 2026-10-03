@@ -28,9 +28,9 @@ func RegisterAdminGoogleAuthRoutes(admin gin.IRoutes, handler *GoogleAuthHandler
 	admin.PUT("/settings/google-auth", handler.UpdateGoogleAuth)
 }
 
-func RegisterAdminOIDCAuthRoutes(admin gin.IRoutes, handler *OIDCAuthHandler) {
-	admin.GET("/settings/oidc-auth", handler.GetOIDCAuth)
-	admin.PUT("/settings/oidc-auth", handler.UpdateOIDCAuth)
+func RegisterAdminSSOAuthRoutes(admin gin.IRoutes, handler *SSOAuthHandler) {
+	admin.GET("/settings/sso-auth", handler.GetSSOAuth)
+	admin.PUT("/settings/sso-auth", handler.UpdateSSOAuth)
 }
 
 func RegisterAdminAffiliateRoutes(admin gin.IRoutes, handler *AffiliateHandler) {

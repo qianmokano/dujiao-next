@@ -98,7 +98,8 @@
           </div>
 
           <!-- 图形验证 -->
-          <div v-if="emailVerificationEnabled && sendCodeCaptchaEnabled && !ssoOnlyMode">
+          <SSOCaptcha v-if="ssoOnlyMode" v-model="ssoCaptchaAnswer" :challenge="ssoCaptchaChallenge" @refresh="refreshSSOCaptcha" />
+          <div v-if="emailVerificationEnabled && sendCodeCaptchaEnabled">
             <p class="mb-2 text-[13px] font-medium text-foreground">{{ t('auth.common.captchaLabel') }}</p>
             <ImageCaptcha
               v-if="captchaProvider === 'image'"
@@ -163,6 +164,7 @@ import { useI18n } from 'vue-i18n'
 import { ArrowLeft, Eye, EyeOff } from 'lucide-vue-next'
 import ImageCaptcha from '../../../components/captcha/ImageCaptcha.vue'
 import TurnstileCaptcha from '../../../components/captcha/TurnstileCaptcha.vue'
+import SSOCaptcha from '../../../components/captcha/SSOCaptcha.vue'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useRegister } from '../../../composables/useRegister'
@@ -175,6 +177,7 @@ const {
   email, emailLocalPart, selectedEmailDomain, password, showPassword, code, agreed,
   passwordStrength, error, sending, countdown,
   captchaPayload, turnstileToken, imageCaptchaRef, turnstileRef,
+  ssoCaptchaChallenge, ssoCaptchaAnswer, refreshSSOCaptcha,
   captchaProvider, sendCodeCaptchaEnabled, turnstileSiteKey,
   ssoOnlyMode,
   registrationEnabled, emailVerificationEnabled,

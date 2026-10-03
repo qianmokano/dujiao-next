@@ -23,7 +23,7 @@ const mount = async (component: any, props = {}) => {
 }
 beforeEach(() => {
   vi.clearAllMocks()
-  mocks.app = reactive({ identityPolicyReady: true, config: { oidc_auth: { only_enabled: true, account_url: 'https://auth.example/account' } } })
+  mocks.app = reactive({ identityPolicyReady: true, config: { sso_auth: { only_enabled: true, account_url: 'https://auth.example/account' } } })
   mocks.profile = reactive({ profile: { email: 'original@example.com', nickname: 'Passport', locale: 'en-US' }, savingProfile: false, profileError: '', saveProfile: mocks.save })
   mocks.save.mockResolvedValue(true)
   mocks.notify.mockImplementation((_message: string, fn: () => void) => fn())
@@ -58,7 +58,7 @@ describe('profile identity ownership', () => {
   })
   it.each([null, {}, { only_enabled: false }])('keeps local editing closed until policy loads: %j', async (config) => {
     mocks.app.identityPolicyReady = false
-    mocks.app.config = config ? { oidc_auth: config } : null
+    mocks.app.config = config ? { sso_auth: config } : null
     await mount(ProfilePanel)
     expect(root.querySelectorAll<HTMLInputElement>('input')[1]?.disabled).toBe(true)
     expect(root.querySelector('a')).toBeNull()
@@ -66,7 +66,7 @@ describe('profile identity ownership', () => {
     expect(mocks.save).toHaveBeenCalledWith({ locale: 'en-US' })
   })
   it('restores local name editing when the current mode is local', async () => {
-    mocks.app.config.oidc_auth.only_enabled = false
+    mocks.app.config.sso_auth.only_enabled = false
     await mount(ProfilePanel)
     expect(root.querySelectorAll<HTMLInputElement>('input')[1]?.disabled).toBe(false)
     expect(root.querySelector('a')).toBeNull()

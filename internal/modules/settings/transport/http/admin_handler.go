@@ -70,11 +70,11 @@ func (h *AdminHandler) Update(c *gin.Context) {
 		)
 		return
 	}
-	if strings.TrimSpace(req.Key) == constants.SettingKeyOIDCAuthConfig {
+	if strings.TrimSpace(req.Key) == constants.SettingKeySSOAuthConfig {
 		ginutil.RespondErrorWithMsg(
 			c,
 			response.CodeBadRequest,
-			"oidc_auth_config must be updated through /admin/settings/oidc-auth",
+			"sso_auth_config must be updated through /admin/settings/sso-auth",
 			nil,
 		)
 		return

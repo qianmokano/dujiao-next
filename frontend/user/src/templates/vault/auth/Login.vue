@@ -132,7 +132,8 @@
             </template>
           </FormField>
 
-          <div v-if="loginCaptchaEnabled && !ssoOnlyMode">
+          <SSOCaptcha v-if="ssoOnlyMode" v-model="ssoCaptchaAnswer" :challenge="ssoCaptchaChallenge" @refresh="refreshSSOCaptcha" />
+          <div v-if="loginCaptchaEnabled">
             <label class="mb-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
               <ShieldCheck class="h-3.5 w-3.5 opacity-70" /> {{ t('auth.common.captchaLabel') }}
             </label>
@@ -191,10 +192,7 @@
               <div v-else-if="showMiniAppLoginHint" class="grid gap-2">
                 <p class="text-center text-xs text-muted-foreground">{{ attemptingMiniAppLogin ? t('auth.login.telegramMiniAppLoggingIn') : t('auth.login.telegramMiniAppHint') }}</p>
               </div>
-              <div v-if="showOidcLogin" class="grid gap-2">
-              <Button type="button" variant="outline" class="h-11 w-full rounded-full font-semibold" @click="startOidcLogin">{{ oidcDisplayName || t('auth.login.oidcButton') }}</Button>
-            </div>
-            <div v-if="showGoogleLogin" class="grid gap-2">
+              <div v-if="showGoogleLogin" class="grid gap-2">
                 <GoogleIdentityButton
                   :client-id="googleClientID"
                   :locale="googleButtonLocale"
@@ -230,6 +228,7 @@ import { useI18n } from 'vue-i18n'
 import { ArrowLeft, Mail, Lock, ShieldCheck, Eye, EyeOff, LogIn } from 'lucide-vue-next'
 import ImageCaptcha from '../../../components/captcha/ImageCaptcha.vue'
 import TurnstileCaptcha from '../../../components/captcha/TurnstileCaptcha.vue'
+import SSOCaptcha from '../../../components/captcha/SSOCaptcha.vue'
 import FormField from '../../../components/FormField.vue'
 import GoogleIdentityButton from '../../../components/auth/GoogleIdentityButton.vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -253,7 +252,8 @@ const {
   showMiniAppLoginHint, attemptingMiniAppLogin, showTelegramMiniAppEntry, openTelegramMiniAppEntry,
   googleClientID, googleButtonLocale, googleIdentityUXMode, googleRedirectLoginURI,
   prepareGoogleRedirectLogin, showGoogleLogin, showThirdPartyLogin,
-  showOidcLogin, oidcDisplayName, startOidcLogin, ssoOnlyMode, passwordResetURL,
+  ssoOnlyMode, passwordResetURL,
+  ssoCaptchaChallenge, ssoCaptchaAnswer, refreshSSOCaptcha,
   ssoMfaChallenge, ssoMfaType, ssoMfaCode, performSsoMfa, cancelSsoMfa,
   handleGoogleCredential, handleGoogleScriptError,
   handleLogin,

@@ -225,13 +225,13 @@ func TestUserProfileHTTPLivesInTransport(t *testing.T) {
 		"DisableUser2FA", "RegenerateUser2FARecoveryCodes", "VerifyUser2FA",
 	})
 	assertFileDeclaresTypes(t, filepath.Join(presenterRoot, "user.go"), []string{
-		"UserProfileResp", "TelegramBindingResp", "GoogleBindingResp", "OIDCBindingResp", "UserAuthBriefResp",
+		"UserProfileResp", "TelegramBindingResp", "GoogleBindingResp", "UserAuthBriefResp",
 	})
 	assertFileDeclaresFunctions(t, filepath.Join(presenterRoot, "user.go"), []string{
-		"NewUserProfileResp", "NewTelegramBindingResp", "NewGoogleBindingResp", "NewOIDCBindingResp", "NewUserAuthBriefResp",
+		"NewUserProfileResp", "NewTelegramBindingResp", "NewGoogleBindingResp", "NewUserAuthBriefResp",
 	})
 	// Profile ownership and avatar response add one transport regression test file.
-	assertDirectoryGoFileBudget(t, transportRoot, 15)
+	assertDirectoryGoFileBudget(t, transportRoot, 16)
 	assertDirectoryGoFileBudget(t, presenterRoot, 2)
 
 	for _, legacy := range []string{

@@ -38,8 +38,8 @@ var defaultSettingRegistry = MustNewRegistry(
 		Effects:   []Effect{EffectInvalidatePublicConfigCache},
 	},
 	Definition{
-		Key:       constants.SettingKeyOIDCAuthConfig,
-		Normalize: settingssecurity.NormalizeOIDCAuthSettingJSON,
+		Key:       constants.SettingKeySSOAuthConfig,
+		Normalize: settingssecurity.NormalizeSSOAuthSettingJSON,
 		Effects:   []Effect{EffectInvalidatePublicConfigCache},
 	},
 	Definition{

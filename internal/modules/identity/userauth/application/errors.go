@@ -22,7 +22,6 @@ var (
 	ErrUserOAuthAlreadyBound        = errors.New("user oauth already bound")
 	ErrUserOAuthNotBound            = errors.New("user oauth not bound")
 	ErrTelegramUnbindRequiresEmail  = errors.New("telegram unbind requires real email")
-	ErrOIDCUnbindRequiresLocalLogin = errors.New("oidc unbind requires local login method")
 	ErrGoogleAutoLinkForbidden      = errors.New("google email auto link forbidden")
 	ErrGoogleUnbindLocked           = errors.New("google unbind would lock account")
 	ErrGoogleRedirectUnavailable    = errors.New("google redirect state store unavailable")

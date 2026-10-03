@@ -20,10 +20,11 @@ func TestUnifiedAuthMiddleware(t *testing.T) {
 		"POST /me/google/bind", "POST /me/google/redirect/intent", "POST /me/google/redirect/exchange", "DELETE /me/google/unbind",
 		"POST /me/telegram/bind", "POST /me/telegram/miniapp/bind", "DELETE /me/telegram/unbind", "GET /me/telegram/oidc/start", "POST /me/telegram/oidc/callback",
 		"GET /me/oidc/start", "POST /me/oidc/callback", "DELETE /me/oidc/unbind",
+		"GET /me/oidc", "GET /auth/oidc/start", "POST /auth/oidc/callback", "POST /auth/oidc/password-login",
 	}
 	allowed := []string{
-		"GET /auth/oidc/start", "POST /auth/oidc/callback", "POST /auth/oidc/password-login", "POST /auth/oidc/mfa", "POST /auth/oidc/register/send-code", "POST /auth/oidc/register",
-		"POST /auth/login/verify-2fa", "GET /me/2fa/status", "GET /me/google", "GET /me/telegram", "GET /me/oidc",
+		"POST /auth/sso/captcha", "POST /auth/sso/password-login", "POST /auth/sso/mfa", "POST /auth/sso/register/send-code", "POST /auth/sso/register",
+		"POST /auth/login/verify-2fa", "GET /me/2fa/status", "GET /me/google", "GET /me/telegram",
 		"GET /me", "PUT /me/profile", "POST /orders", "GET /wallet", "GET /orders/:id",
 	}
 	policy := false

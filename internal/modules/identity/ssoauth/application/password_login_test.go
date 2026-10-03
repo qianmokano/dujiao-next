@@ -1,4 +1,4 @@
-package oidcauthapp
+package ssoauthapp
 
 import (
 	"context"
@@ -17,12 +17,9 @@ func newTestInpageService(t *testing.T, mux *http.ServeMux) (*Service, *mfaStore
 	t.Helper()
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
-	svc := NewService(config.OIDCAuthConfig{
+	svc := NewService(config.SSOAuthConfig{
 		Enabled:       true,
 		Issuer:        srv.URL,
-		ClientID:      "c",
-		ClientSecret:  "s",
-		RedirectURI:   "https://shop.example.com/auth/oidc/callback",
 		ApplicationID: "admin/dujiao-store",
 		Organization:  "kano",
 	})
@@ -92,8 +89,8 @@ func TestLoginWithPasswordHappyPath(t *testing.T) {
 		t.Fatalf("provider = %q", verified.Provider)
 	}
 
-	if _, _, err := svc.LoginWithPassword(context.Background(), "buyer@example.com", "wrong"); err != ErrOIDCInvalidCredentials {
-		t.Fatalf("wrong password err = %v, want ErrOIDCInvalidCredentials", err)
+	if _, _, err := svc.LoginWithPassword(context.Background(), "buyer@example.com", "wrong"); err != ErrSSOInvalidCredentials {
+		t.Fatalf("wrong password err = %v, want ErrSSOInvalidCredentials", err)
 	}
 }
 
@@ -103,8 +100,8 @@ func TestLoginWithPasswordFrozen(t *testing.T) {
 		_, _ = w.Write([]byte(`{"status":"error","msg":"You have entered the wrong password or code too many times, please wait for 12 minutes to try again"}`))
 	})
 	svc, _ := newTestInpageService(t, mux)
-	if _, _, err := svc.LoginWithPassword(context.Background(), "a@b.com", "x"); err != ErrOIDCAccountFrozen {
-		t.Fatalf("err = %v, want ErrOIDCAccountFrozen", err)
+	if _, _, err := svc.LoginWithPassword(context.Background(), "a@b.com", "x"); err != ErrSSOAccountFrozen {
+		t.Fatalf("err = %v, want ErrSSOAccountFrozen", err)
 	}
 }
 
@@ -147,8 +144,8 @@ func TestLoginWithPasswordMFAFlow(t *testing.T) {
 	}
 
 	// 错误验证码:挑战态保留,可重试
-	if _, err := svc.CompleteMFA(context.Background(), challenge.Token, "otp", "000000"); err != ErrOIDCMFACodeInvalid {
-		t.Fatalf("bad code err = %v, want ErrOIDCMFACodeInvalid", err)
+	if _, err := svc.CompleteMFA(context.Background(), challenge.Token, "otp", "000000"); err != ErrSSOMFACodeInvalid {
+		t.Fatalf("bad code err = %v, want ErrSSOMFACodeInvalid", err)
 	}
 	if len(store.kv) != 1 {
 		t.Fatalf("challenge should survive a wrong code")
@@ -165,8 +162,8 @@ func TestLoginWithPasswordMFAFlow(t *testing.T) {
 	if len(store.kv) != 0 {
 		t.Fatalf("challenge state not consumed after success")
 	}
-	if _, err := svc.CompleteMFA(context.Background(), challenge.Token, "otp", "123456"); err != ErrOIDCMFAChallengeInvalid {
-		t.Fatalf("replay err = %v, want ErrOIDCMFAChallengeInvalid", err)
+	if _, err := svc.CompleteMFA(context.Background(), challenge.Token, "otp", "123456"); err != ErrSSOMFAChallengeInvalid {
+		t.Fatalf("replay err = %v, want ErrSSOMFAChallengeInvalid", err)
 	}
 }
 
@@ -195,11 +192,11 @@ func TestSendRegisterCodeErrors(t *testing.T) {
 	if err := svc.SendRegisterCode(context.Background(), "new@example.com"); err != nil {
 		t.Fatalf("SendRegisterCode: %v", err)
 	}
-	if err := svc.SendRegisterCode(context.Background(), "taken@example.com"); err != ErrOIDCEmailExists {
-		t.Fatalf("taken err = %v, want ErrOIDCEmailExists", err)
+	if err := svc.SendRegisterCode(context.Background(), "taken@example.com"); err != ErrSSOEmailExists {
+		t.Fatalf("taken err = %v, want ErrSSOEmailExists", err)
 	}
-	if err := svc.SendRegisterCode(context.Background(), "fast@example.com"); err != ErrOIDCCodeResendWait {
-		t.Fatalf("fast err = %v, want ErrOIDCCodeResendWait", err)
+	if err := svc.SendRegisterCode(context.Background(), "fast@example.com"); err != ErrSSOCodeResendWait {
+		t.Fatalf("fast err = %v, want ErrSSOCodeResendWait", err)
 	}
 	if calls != 3 {
 		t.Fatalf("calls = %d", calls)
@@ -243,8 +240,8 @@ func TestRegisterWithPassword(t *testing.T) {
 	}
 
 	// 验证码错误直接失败,不重试
-	if _, err := svc.RegisterWithPassword(context.Background(), "x@example.com", "pw123456", "bad", ""); err != ErrOIDCCodeInvalid {
-		t.Fatalf("bad code err = %v, want ErrOIDCCodeInvalid", err)
+	if _, err := svc.RegisterWithPassword(context.Background(), "x@example.com", "pw123456", "bad", ""); err != ErrSSOCodeInvalid {
+		t.Fatalf("bad code err = %v, want ErrSSOCodeInvalid", err)
 	}
 }
 

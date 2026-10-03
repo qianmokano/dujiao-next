@@ -1,20 +1,20 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { isUnifiedAuthOnly, safeIdentityURL, useOIDCCredentials } from '../src/utils/unifiedAuth.ts'
+import { isUnifiedAuthOnly, safeIdentityURL, useSSOCredentials } from '../src/utils/unifiedAuth.ts'
 
 test('only unified authentication ignores customer local query even if the provider is unavailable', () => {
   for (const enabled of [true, false]) {
     for (const local of ['1', '0', undefined, ['1']]) {
-      assert.equal(useOIDCCredentials({ enabled, only_enabled: true }, local), true)
+      assert.equal(useSSOCredentials({ enabled, only_enabled: true }, local), true)
     }
   }
 })
 
 test('optional unified authentication preserves local display fallback', () => {
-  assert.equal(useOIDCCredentials({ enabled: true }, undefined), true)
-  assert.equal(useOIDCCredentials({ enabled: true }, '1'), false)
-  assert.equal(useOIDCCredentials({ enabled: false }, undefined), false)
-  assert.equal(useOIDCCredentials(null, undefined), false)
+  assert.equal(useSSOCredentials({ enabled: true }, undefined), true)
+  assert.equal(useSSOCredentials({ enabled: true }, '1'), false)
+  assert.equal(useSSOCredentials({ enabled: false }, undefined), false)
+  assert.equal(useSSOCredentials(null, undefined), false)
   assert.equal(isUnifiedAuthOnly(undefined), false)
   assert.equal(isUnifiedAuthOnly({ only_enabled: false }), false)
 })

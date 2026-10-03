@@ -11,7 +11,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reportsDirectory: './node_modules/.tmp/coverage-account',
-      include: ['src/components/shared/ProfileAvatar.vue', 'src/views/personal/ProfilePanel.vue'],
+      include: ['src/components/shared/ProfileAvatar.vue', 'src/views/personal/ProfilePanel.vue', 'src/composables/useSSOCaptcha.ts', 'src/components/captcha/SSOCaptcha.vue'],
       reporter: ['text'],
       thresholds: { lines: 80, branches: 80, functions: 80, statements: 80 },
     },

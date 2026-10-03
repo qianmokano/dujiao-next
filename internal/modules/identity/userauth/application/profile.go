@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	oidcauthapp "github.com/dujiao-next/internal/modules/identity/oidcauth/application"
+	ssoauthapp "github.com/dujiao-next/internal/modules/identity/ssoauth/application"
 	userdomain "github.com/dujiao-next/internal/modules/identity/user/domain"
 	"github.com/dujiao-next/internal/shared/passwordpolicy"
 
@@ -165,7 +165,7 @@ func (s *Service) GetProfileAvatar(userID uint) (string, error) {
 	if err != nil || identity == nil {
 		return "", err
 	}
-	avatar, valid := oidcAvatar(&oidcauthapp.IdentityVerified{AvatarURL: identity.AvatarURL})
+	avatar, valid := ssoAvatar(&ssoauthapp.IdentityVerified{AvatarURL: identity.AvatarURL})
 	if !valid {
 		return "", nil
 	}

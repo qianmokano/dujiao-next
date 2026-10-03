@@ -56,34 +56,6 @@ type TelegramBindingResp struct {
 	CanUnbind      bool       `json:"can_unbind"`
 }
 
-// OIDCBindingResp 通用 OIDC 绑定状态响应
-type OIDCBindingResp struct {
-	Bound          bool       `json:"bound"`
-	Provider       string     `json:"provider,omitempty"`
-	ProviderUserID string     `json:"provider_user_id,omitempty"`
-	Username       string     `json:"username,omitempty"`
-	AvatarURL      string     `json:"avatar_url,omitempty"`
-	AuthAt         *time.Time `json:"auth_at,omitempty"`
-	CanUnbind      bool       `json:"can_unbind"`
-}
-
-// NewOIDCBindingResp 从外部身份领域实体构造响应。
-func NewOIDCBindingResp(identity *externalidentitydomain.Identity, canUnbind ...bool) OIDCBindingResp {
-	resolvedCanUnbind := len(canUnbind) > 0 && canUnbind[0]
-	if identity == nil {
-		return OIDCBindingResp{Bound: false, CanUnbind: false}
-	}
-	return OIDCBindingResp{
-		Bound:          true,
-		Provider:       identity.Provider,
-		ProviderUserID: identity.ProviderUserID,
-		Username:       identity.Username,
-		AvatarURL:      identity.AvatarURL,
-		AuthAt:         identity.AuthAt,
-		CanUnbind:      resolvedCanUnbind,
-	}
-}
-
 // GoogleBindingResp Google 绑定状态响应。
 type GoogleBindingResp struct {
 	Bound          bool       `json:"bound"`

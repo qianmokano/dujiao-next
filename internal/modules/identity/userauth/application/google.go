@@ -596,10 +596,10 @@ func (s *Service) isUsableExternalIdentity(identity *externalidentitydomain.Iden
 			strings.TrimSpace(username) != "" &&
 			(mode == "widget" || mode == "oidc")
 	case constants.UserOAuthProviderOIDC:
-		if s.oidcAuthService == nil {
+		if s.ssoAuthService == nil {
 			return false
 		}
-		public := s.oidcAuthService.PublicConfig()
+		public := s.ssoAuthService.PublicConfig()
 		enabled, _ := public["enabled"].(bool)
 		return enabled
 	default:
@@ -609,7 +609,7 @@ func (s *Service) isUsableExternalIdentity(identity *externalidentitydomain.Iden
 }
 
 func (s *Service) completeExternalLogin(user *userdomain.User, source string) (*UserLoginResult, error) {
-	if s.oidcAuthService.OnlyEnabled() && source != constants.LoginLogSourceOIDC {
+	if s.ssoAuthService.OnlyEnabled() && source != constants.LoginLogSourceOIDC {
 		return nil, ErrUnifiedAuthRequired
 	}
 	if user == nil {

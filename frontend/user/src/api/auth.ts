@@ -1,6 +1,21 @@
 import { api, userApi } from './client'
-import type { GoogleCredentialPayload, TelegramAuthPayload, TelegramMiniAppAuthPayload } from './types'
+import type { CaptchaPayload, GoogleCredentialPayload, TelegramAuthPayload, TelegramMiniAppAuthPayload } from './types'
 import { GOOGLE_REDIRECT_API_PATHS } from '../utils/googleRedirect'
+
+export type SSOCaptchaAction = 'login' | 'register-send-code' | 'register'
+export interface SSOCaptchaProof { challenge: string; answer: string }
+export interface SSOCaptchaChallenge {
+    required: boolean
+    challenge?: string
+    type?: 'image' | 'turnstile'
+    image_base64?: string
+    site_key?: string
+    expires_in?: number
+}
+export interface SSOAuthProofs {
+    captcha?: SSOCaptchaProof
+    captcha_payload?: CaptchaPayload
+}
 
 export const userAuthAPI = {
     sendVerifyCode: (data: any) => userApi.post('/auth/send-verify-code', data),
@@ -15,17 +30,15 @@ export const userAuthAPI = {
     telegramOidcCallback: (data: { code: string; state: string }) =>
         userApi.post('/auth/telegram/oidc/callback', data),
     googleLogin: (data: GoogleCredentialPayload) => userApi.post('/auth/google/login', data),
-    oidcStart: () => userApi.get('/auth/oidc/start'),
-    oidcCallback: (data: { code: string; state: string }) =>
-        userApi.post('/auth/oidc/callback', data),
-    oidcPasswordLogin: (data: { email: string; password: string }) =>
-        userApi.post('/auth/oidc/password-login', data),
-    oidcMfa: (data: { challenge: string; mfa_type: string; passcode: string }) =>
-        userApi.post('/auth/oidc/mfa', data),
-    oidcRegisterSendCode: (data: { email: string }) =>
-        userApi.post('/auth/oidc/register/send-code', data),
-    oidcRegister: (data: { email: string; password: string; code: string; display_name?: string }) =>
-        userApi.post('/auth/oidc/register', data),
+    ssoCaptcha: (data: { action: SSOCaptchaAction; account: string }) => userApi.post('/auth/sso/captcha', data),
+    ssoPasswordLogin: (data: { email: string; password: string } & SSOAuthProofs) =>
+        userApi.post('/auth/sso/password-login', data),
+    ssoMfa: (data: { challenge: string; mfa_type: string; passcode: string }) =>
+        userApi.post('/auth/sso/mfa', data),
+    ssoRegisterSendCode: (data: { email: string } & SSOAuthProofs) =>
+        userApi.post('/auth/sso/register/send-code', data),
+    ssoRegister: (data: { email: string; password: string; code: string; display_name?: string } & SSOAuthProofs) =>
+        userApi.post('/auth/sso/register', data),
     googleRedirectIntent: () =>
         userApi.post(GOOGLE_REDIRECT_API_PATHS.loginIntent, {}, { credentials: 'include' }),
     googleRedirectExchange: () =>
