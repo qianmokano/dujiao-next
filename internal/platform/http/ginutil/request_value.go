@@ -1,12 +1,26 @@
 package ginutil
 
 import (
+	"encoding/json"
 	"errors"
 	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 )
+
+// HasJSONField checks presence using the same case folding as encoding/json.
+// Values are intentionally ignored so explicit null is still a supplied field.
+func HasJSONField(fields map[string]json.RawMessage, names ...string) bool {
+	for key := range fields {
+		for _, name := range names {
+			if strings.EqualFold(key, name) {
+				return true
+			}
+		}
+	}
+	return false
+}
 
 // ParseParamUint 解析路径参数中的正整数 ID。
 func ParseParamUint(c *gin.Context, key string) (uint, error) {

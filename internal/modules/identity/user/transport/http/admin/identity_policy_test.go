@@ -13,7 +13,7 @@ import (
 
 func TestUnifiedAdminIdentityWritesAreForbiddenBeforeBusinessMutation(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	for _, field := range []string{"nickname", "email", "password", "avatar", "avatar_url", "email_verified", "email_verified_at", "oauth_identities", "auth_bindings", "auth_identities", "role", "identities", "identity_bindings", "Nickname", "EMAIL", "Role", "Avatar_Url"} {
+	for _, field := range []string{"nickname", "email", "password", "avatar", "avatar_url", "email_verified", "email_verified_at", "oauth_identities", "auth_bindings", "auth_identities", "role", "identities", "identity_bindings", "Nickname", "EMAIL", "Role", "Avatar_Url", "paſſword", "nicKname"} {
 		t.Run(field, func(t *testing.T) {
 			h := &AdminHandler{identityPolicy: func() (bool, error) { return true, nil }}
 			router := gin.New()
