@@ -268,11 +268,45 @@ type oidcTokenResponse struct {
 
 type oidcIDClaims struct {
 	jwt.RegisteredClaims
-	Email             string  `json:"email"`
-	EmailVerified     bool    `json:"email_verified"`
-	Name              string  `json:"name"`
-	PreferredUsername string  `json:"preferred_username"`
-	Picture           *string `json:"picture"`
+	Email                string  `json:"email"`
+	EmailVerified        *bool   `json:"email_verified"`
+	Name                 string  `json:"name"`
+	PreferredUsername    string  `json:"preferred_username"`
+	Picture              *string `json:"picture"`
+	CasdoorDisplayName   *string `json:"displayName"`
+	CasdoorAvatar        *string `json:"avatar"`
+	CasdoorEmailVerified *bool   `json:"emailVerified"`
+}
+
+func (c *oidcIDClaims) identity(authAt time.Time) *IdentityVerified {
+	displayName := strings.TrimSpace(c.Name)
+	username := strings.TrimSpace(c.PreferredUsername)
+	// Casdoor's default token format uses name for the username, unlike its Standard format.
+	if c.CasdoorDisplayName != nil {
+		displayName = strings.TrimSpace(*c.CasdoorDisplayName)
+		if username == "" {
+			username = strings.TrimSpace(c.Name)
+		}
+	}
+	avatar := c.Picture
+	if avatar == nil {
+		avatar = c.CasdoorAvatar
+	}
+	emailVerified := c.EmailVerified
+	if emailVerified == nil {
+		emailVerified = c.CasdoorEmailVerified
+	}
+	return &IdentityVerified{
+		Provider:       constants.UserOAuthProviderOIDC,
+		ProviderUserID: strings.TrimSpace(c.Subject),
+		Email:          strings.TrimSpace(c.Email),
+		EmailVerified:  emailVerified != nil && *emailVerified,
+		Username:       username,
+		DisplayName:    displayName,
+		AvatarURL:      optionalAvatar(avatar),
+		AvatarPresent:  avatar != nil,
+		AuthAt:         authAt,
+	}
 }
 
 // CompleteOIDCLogin 用授权码换 token 并返回验签后的身份。
@@ -365,17 +399,7 @@ func (s *Service) CompleteOIDCLogin(ctx context.Context, code, state string) (*I
 		return nil, "", 0, err
 	}
 
-	return &IdentityVerified{
-		Provider:       constants.UserOAuthProviderOIDC,
-		ProviderUserID: providerUserID,
-		Email:          strings.TrimSpace(claims.Email),
-		EmailVerified:  claims.EmailVerified,
-		Username:       strings.TrimSpace(claims.PreferredUsername),
-		DisplayName:    strings.TrimSpace(claims.Name),
-		AvatarURL:      optionalAvatar(claims.Picture),
-		AvatarPresent:  claims.Picture != nil,
-		AuthAt:         authAt,
-	}, st.Intent, st.UserID, nil
+	return claims.identity(authAt), st.Intent, st.UserID, nil
 }
 
 func fp8(token string) []byte {

@@ -111,6 +111,10 @@ func TestStartAndCompleteOIDCLogin(t *testing.T) {
 	})
 
 	var gotVerifier string
+	profileClaims := jwt.MapClaims{
+		"email_verified": true, "name": "测试买家", "preferred_username": "buyer",
+		"picture": "https://idp.example.com/avatar.png",
+	}
 	mux.HandleFunc("/api/login/oauth/access_token", func(w http.ResponseWriter, r *http.Request) {
 		if err := r.ParseForm(); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
@@ -126,18 +130,18 @@ func TestStartAndCompleteOIDCLogin(t *testing.T) {
 			return
 		}
 		now := time.Now()
-		idToken := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
-			"iss":                base,
-			"aud":                clientID,
-			"sub":                subject,
-			"iat":                now.Unix(),
-			"exp":                now.Add(time.Hour).Unix(),
-			"email":              "buyer@example.com",
-			"email_verified":     true,
-			"name":               "测试买家",
-			"preferred_username": "buyer",
-			"picture":            "https://idp.example.com/avatar.png",
-		})
+		claims := jwt.MapClaims{
+			"iss":   base,
+			"aud":   clientID,
+			"sub":   subject,
+			"iat":   now.Unix(),
+			"exp":   now.Add(time.Hour).Unix(),
+			"email": "buyer@example.com",
+		}
+		for key, value := range profileClaims {
+			claims[key] = value
+		}
+		idToken := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
 		idToken.Header["kid"] = kid
 		signed, signErr := idToken.SignedString(priv)
 		if signErr != nil {
@@ -189,6 +193,65 @@ func TestStartAndCompleteOIDCLogin(t *testing.T) {
 	}
 	if gotVerifier == "" {
 		t.Fatalf("code_verifier not sent to token endpoint")
+	}
+
+	// A subsequent callback from Casdoor's default format must retain the display name,
+	// avatar and verified email instead of replacing the nickname with the username.
+	profileClaims = jwt.MapClaims{
+		"name": "buyer", "displayName": "更新后的昵称", "emailVerified": true,
+		"avatar": "https://idp.example.com/updated-avatar.png",
+	}
+	authURL, err = svc.StartOIDCLogin(context.Background(), LoginIntentLogin, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	u, err = url.Parse(authURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	verified, _, _, err = svc.CompleteOIDCLogin(context.Background(), "authcode-1", u.Query().Get("state"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if verified.DisplayName != "更新后的昵称" || verified.Username != "buyer" || !verified.EmailVerified || verified.AvatarURL != "https://idp.example.com/updated-avatar.png" || !verified.AvatarPresent {
+		t.Fatalf("Casdoor profile claims = %+v", verified)
+	}
+}
+
+func TestOIDCProfileClaimsFormatsAndFieldPresence(t *testing.T) {
+	for _, tc := range []struct {
+		name, payload, displayName, username, avatar string
+		avatarPresent, emailVerified                 bool
+	}{
+		{"standard", `{"name":" Standard Buyer ","preferred_username":" buyer ","picture":"https://idp.example/avatar.png","email_verified":true}`, "Standard Buyer", "buyer", "https://idp.example/avatar.png", true, true},
+		{"casdoor", `{"name":" buyer ","displayName":" Passport Buyer ","avatar":"https://idp.example/passport.png","emailVerified":true}`, "Passport Buyer", "buyer", "https://idp.example/passport.png", true, true},
+		{"casdoor empty display name", `{"name":"buyer","displayName":" "}`, "", "buyer", "", false, false},
+		{"explicit username retained", `{"name":"buyer","displayName":"Passport Buyer","preferred_username":"subject-name"}`, "Passport Buyer", "subject-name", "", false, false},
+		{"avatar missing", `{"name":"Buyer"}`, "Buyer", "", "", false, false},
+		{"avatar null", `{"picture":null,"avatar":null}`, "", "", "", false, false},
+		{"standard avatar clear", `{"picture":"","avatar":"https://idp.example/old.png"}`, "", "", "", true, false},
+		{"casdoor avatar clear", `{"avatar":""}`, "", "", "", true, false},
+		{"standard avatar priority", `{"picture":"https://idp.example/standard.png","avatar":"https://idp.example/old.png"}`, "", "", "https://idp.example/standard.png", true, false},
+		{"standard unverified priority", `{"email_verified":false,"emailVerified":true}`, "", "", "", false, false},
+		{"casdoor unverified", `{"emailVerified":false}`, "", "", "", false, false},
+		{"null standard verification", `{"email_verified":null,"emailVerified":true}`, "", "", "", false, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var claims oidcIDClaims
+			if err := json.Unmarshal([]byte(tc.payload), &claims); err != nil {
+				t.Fatal(err)
+			}
+			claims.Subject = " fixture-subject "
+			claims.Email = " buyer@example.com "
+			authAt := time.Unix(1700000000, 0)
+			identity := claims.identity(authAt)
+			if identity.DisplayName != tc.displayName || identity.Username != tc.username || identity.AvatarURL != tc.avatar || identity.AvatarPresent != tc.avatarPresent || identity.EmailVerified != tc.emailVerified {
+				t.Fatalf("identity = %+v", identity)
+			}
+			if identity.ProviderUserID != "fixture-subject" || identity.Email != "buyer@example.com" || identity.Provider != constants.UserOAuthProviderOIDC || !identity.AuthAt.Equal(authAt) {
+				t.Fatalf("identity metadata = %+v", identity)
+			}
+		})
 	}
 }
 
