@@ -16,6 +16,7 @@ import (
 	userdomain "github.com/dujiao-next/internal/modules/identity/user/domain"
 
 	"github.com/dujiao-next/internal/constants"
+	"github.com/dujiao-next/internal/i18n"
 	couponcontract "github.com/dujiao-next/internal/modules/coupon/contract"
 	externalidentitydomain "github.com/dujiao-next/internal/modules/identity/externalidentity/domain"
 	"github.com/dujiao-next/internal/platform/http/ginutil"
@@ -24,6 +25,7 @@ import (
 	"github.com/dujiao-next/internal/shared/money"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/shopspring/decimal"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -58,8 +60,12 @@ type UserDirectory interface {
 	GetByID(id uint) (*userdomain.User, error)
 	GetByEmail(email string) (*userdomain.User, error)
 	Update(user *userdomain.User) error
+	UpdateFields(userID uint, fields map[string]interface{}) error
 	BatchUpdateStatus(ids []uint, status string) error
 }
+
+// IdentityPolicy is supplied by composition and reads the current persisted policy.
+type IdentityPolicy func() (onlyEnabled bool, err error)
 
 // EmailNormalizer 邮箱规范化端口。
 type EmailNormalizer interface {
@@ -106,15 +112,16 @@ type AuthStateCache interface {
 
 // AdminHandler 处理后台用户管理 HTTP 请求。
 type AdminHandler struct {
-	users         UserDirectory
-	emails        EmailNormalizer
-	wallets       WalletBalances
-	oauth         OAuthIdentityDirectory
-	oauthUnbinder OAuthIdentityUnbinder
-	couponUsages  CouponUsageDirectory
-	coupons       CouponDirectory
-	products      ProductDirectory
-	authState     AuthStateCache
+	users          UserDirectory
+	emails         EmailNormalizer
+	wallets        WalletBalances
+	oauth          OAuthIdentityDirectory
+	oauthUnbinder  OAuthIdentityUnbinder
+	couponUsages   CouponUsageDirectory
+	coupons        CouponDirectory
+	products       ProductDirectory
+	authState      AuthStateCache
+	identityPolicy IdentityPolicy
 }
 
 func NewAdminHandler(
@@ -127,6 +134,7 @@ func NewAdminHandler(
 	coupons CouponDirectory,
 	products ProductDirectory,
 	authState AuthStateCache,
+	policies ...IdentityPolicy,
 ) *AdminHandler {
 	if users == nil {
 		panic("admin user handler: users is nil")
@@ -152,17 +160,38 @@ func NewAdminHandler(
 	if products == nil {
 		panic("admin user handler: products is nil")
 	}
-	return &AdminHandler{
-		users:         users,
-		emails:        emails,
-		wallets:       wallets,
-		oauth:         oauth,
-		oauthUnbinder: oauthUnbinder,
-		couponUsages:  couponUsages,
-		coupons:       coupons,
-		products:      products,
-		authState:     authState,
+	var policy IdentityPolicy
+	if len(policies) > 0 {
+		policy = policies[0]
 	}
+	return &AdminHandler{
+		users:          users,
+		emails:         emails,
+		wallets:        wallets,
+		oauth:          oauth,
+		oauthUnbinder:  oauthUnbinder,
+		couponUsages:   couponUsages,
+		coupons:        coupons,
+		products:       products,
+		authState:      authState,
+		identityPolicy: policy,
+	}
+}
+
+func (h *AdminHandler) allowIdentityEdit(c *gin.Context) bool {
+	if h.identityPolicy == nil {
+		return true
+	}
+	only, err := h.identityPolicy()
+	if err != nil {
+		ginutil.RespondError(c, response.CodeInternal, "error.user_update_failed", err)
+		return false
+	}
+	if only {
+		response.ErrorWithHTTPStatus(c, response.CodeForbidden, response.CodeForbidden, i18n.T(i18n.ResolveLocale(c), "error.unified_auth_required"))
+		return false
+	}
+	return true
 }
 
 // UpdateAdminUserRequest 管理员更新用户请求。
@@ -346,9 +375,19 @@ func (h *AdminHandler) UpdateAdminUser(c *gin.Context) {
 	}
 
 	var req UpdateAdminUserRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.ShouldBindBodyWith(&req, binding.JSON); err != nil {
 		ginutil.RespondBindError(c, err)
 		return
+	}
+	var fields map[string]json.RawMessage
+	if err := c.ShouldBindBodyWith(&fields, binding.JSON); err != nil {
+		ginutil.RespondBindError(c, err)
+		return
+	}
+	for _, key := range []string{"nickname", "display_name", "username", "email", "password", "avatar", "avatar_url", "email_verified", "email_verified_at", "oauth_identities", "auth_identities", "auth_bindings", "role"} {
+		if _, exists := fields[key]; exists && !h.allowIdentityEdit(c) {
+			return
+		}
 	}
 
 	user, err := h.users.GetByID(userID)
@@ -452,7 +491,29 @@ func (h *AdminHandler) UpdateAdminUser(c *gin.Context) {
 		user.TokenVersion++
 		user.TokenInvalidBefore = &now
 	}
-	if err := h.users.Update(user); err != nil {
+	updates := map[string]interface{}{"updated_at": now}
+	for _, field := range []struct {
+		provided bool
+		name     string
+		value    interface{}
+	}{
+		{req.Email != nil, "email", user.Email},
+		{req.Nickname != nil, "display_name", user.DisplayName},
+		{req.Password != nil, "password_hash", user.PasswordHash},
+		{req.Locale != nil, "locale", user.Locale},
+		{req.Status != nil, "status", user.Status},
+		{req.AdminNote != nil, "admin_note", user.AdminNote},
+		{req.EmailVerified != nil, "email_verified_at", user.EmailVerifiedAt},
+	} {
+		if field.provided {
+			updates[field.name] = field.value
+		}
+	}
+	if revokeToken {
+		updates["token_version"] = user.TokenVersion
+		updates["token_invalid_before"] = user.TokenInvalidBefore
+	}
+	if err := h.users.UpdateFields(user.ID, updates); err != nil {
 		ginutil.RespondError(c, response.CodeInternal, "error.user_update_failed", err)
 		return
 	}
@@ -466,6 +527,9 @@ func (h *AdminHandler) UpdateAdminUser(c *gin.Context) {
 // UnbindAdminUserTelegram 管理员解除目标用户的 Telegram 绑定。
 // DELETE /admin/users/:id/oauth/telegram
 func (h *AdminHandler) UnbindAdminUserTelegram(c *gin.Context) {
+	if !h.allowIdentityEdit(c) {
+		return
+	}
 	userID, err := ginutil.ParseParamUint(c, "id")
 	if err != nil {
 		ginutil.RespondError(c, response.CodeBadRequest, "error.user_id_invalid", nil)
@@ -494,6 +558,9 @@ func (h *AdminHandler) UnbindAdminUserTelegram(c *gin.Context) {
 // UnbindAdminUserGoogle 管理员解除目标用户的 Google 绑定。
 // DELETE /admin/users/:id/oauth/google
 func (h *AdminHandler) UnbindAdminUserGoogle(c *gin.Context) {
+	if !h.allowIdentityEdit(c) {
+		return
+	}
 	userID, err := ginutil.ParseParamUint(c, "id")
 	if err != nil {
 		ginutil.RespondError(c, response.CodeBadRequest, "error.user_id_invalid", nil)

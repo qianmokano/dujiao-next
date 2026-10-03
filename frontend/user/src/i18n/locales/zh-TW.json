@@ -360,6 +360,7 @@
     },
     "security": {
       "unifiedIdentityHint": "密碼、身分信箱與兩步驗證由統一帳號管理。",
+      "unifiedSyncHint": "暱稱與頭像在 Kano 通行證修改後，下次登入同步。",
       "manageUnifiedIdentity": "管理統一帳號",
       "title": "安全中心",
       "subtitle": "透過雙驗證碼流程完成信箱更換",

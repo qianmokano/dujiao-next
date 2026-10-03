@@ -14,6 +14,7 @@ type UserProfileResp struct {
 	ID                 uint         `json:"id"`
 	Email              string       `json:"email"`
 	Nickname           string       `json:"nickname"`
+	AvatarURL          string       `json:"avatar_url"`
 	EmailVerifiedAt    *time.Time   `json:"email_verified_at"`
 	Locale             string       `json:"locale"`
 	MemberLevelID      uint         `json:"member_level_id"`

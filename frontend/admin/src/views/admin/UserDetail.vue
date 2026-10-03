@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { adminAPI, type AdminWalletAccount, type AdminWalletTransaction } from '@/api/admin'
+import { localIdentityEditable } from '@/utils/identityPolicy'
 import type { AdminUser, AdminOrder, AdminPayment, AdminMemberLevel, AdminUserOAuthIdentity } from '@/api/types'
 import IdCell from '@/components/IdCell.vue'
 import { BadgeCheck, Copy, BadgeAlert } from 'lucide-vue-next'
@@ -396,6 +397,16 @@ const oauthIdentities = computed(() => {
   return Array.isArray(list) ? list : []
 })
 const oauthUnbindingId = ref<number | null>(null)
+const identityEditable = ref(false)
+const loadIdentityPolicy = async () => {
+  identityEditable.value = false
+  try {
+    const res = await adminAPI.getOIDCAuthSettings()
+    identityEditable.value = localIdentityEditable(res.data?.data)
+  } catch {
+    identityEditable.value = false
+  }
+}
 const oauthError = ref('')
 const oauthSuccess = ref('')
 
@@ -425,6 +436,7 @@ const handleResetUser2FA = async () => {
 }
 
 const handleUnbindOAuthIdentity = async (identity: AdminUserOAuthIdentity) => {
+  if (!identityEditable.value) return
   const provider = managedOAuthProvider(identity)
   if (!Number.isFinite(userId.value) || userId.value <= 0 || !provider) return
   const isGoogle = provider === 'google'
@@ -461,6 +473,7 @@ const handleUnbindOAuthIdentity = async (identity: AdminUserOAuthIdentity) => {
 }
 
 onMounted(() => {
+  void loadIdentityPolicy()
   fetchSiteCurrency()
   fetchUser()
   fetchOrders()
@@ -662,7 +675,7 @@ watch(
                 </div>
               </div>
               <Button
-                v-if="managedOAuthProvider(identity)"
+                v-if="identityEditable && managedOAuthProvider(identity)"
                 size="sm"
                 variant="destructive"
                 class="shrink-0 cursor-pointer"

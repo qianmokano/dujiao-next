@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 
@@ -107,75 +108,107 @@ func (s *Service) loginVerifiedOIDC(verified *oidcauthapp.IdentityVerified) (*Us
 	if verified == nil || verified.Provider == "" || strings.TrimSpace(verified.ProviderUserID) == "" {
 		return nil, oidcauthapp.ErrOIDCPayloadInvalid
 	}
-	identity, err := s.userOAuthIdentityRepo.GetByProviderUserID(verified.Provider, verified.ProviderUserID)
-	if err != nil {
-		return nil, err
+	if s.authUnitOfWork == nil {
+		return nil, oidcauthapp.ErrOIDCAuthConfigInvalid
 	}
-
-	if identity != nil {
-		user, err := s.getActiveUserByID(identity.UserID)
+	for attempt := 0; attempt < 2; attempt++ {
+		before, err := s.userOAuthIdentityRepo.GetByProviderUserID(verified.Provider, verified.ProviderUserID)
 		if err != nil {
 			return nil, err
 		}
-		if applyOIDCIdentity(verified, identity) {
-			identity.UpdatedAt = time.Now()
-			if err := s.userOAuthIdentityRepo.Update(identity); err != nil {
-				return nil, err
+		var user *userdomain.User
+		var created bool
+		err = s.authUnitOfWork.WithinTransaction(context.Background(), func(tx AuthTransaction) error {
+			// Lock the user before the identity, matching other authentication transactions.
+			var identity *externalidentitydomain.Identity
+			var txErr error
+			if before != nil {
+				user, txErr = activeTransactionUser(tx, before.UserID)
+				if txErr != nil {
+					return txErr
+				}
+				identity, txErr = tx.GetIdentityByProviderUserID(verified.Provider, verified.ProviderUserID)
+				if txErr != nil {
+					return txErr
+				}
+				if identity == nil || identity.UserID != user.ID {
+					return errGoogleLoginMappingChanged
+				}
+			} else {
+				user, created, txErr = s.findOrCreateOIDCUser(tx, verified)
+				if txErr != nil {
+					return txErr
+				}
+				identity, txErr = tx.GetIdentityByProviderUserID(verified.Provider, verified.ProviderUserID)
+				if txErr != nil {
+					return txErr
+				}
+				if identity != nil {
+					return errGoogleLoginMappingChanged
+				}
+				identity = &externalidentitydomain.Identity{UserID: user.ID, Provider: verified.Provider, ProviderUserID: verified.ProviderUserID, CreatedAt: time.Now()}
+				applyOIDCIdentity(verified, identity)
+				identity.UpdatedAt = time.Now()
+				if txErr = tx.CreateIdentity(identity); txErr != nil {
+					return txErr
+				}
+			}
+			if applyOIDCIdentity(verified, identity) {
+				identity.UpdatedAt = time.Now()
+				if txErr = tx.UpdateIdentity(identity); txErr != nil {
+					return txErr
+				}
+			}
+			fields := map[string]interface{}{}
+			if s.oidcAuthService.OnlyEnabled() {
+				user.DisplayName = resolveOIDCDisplayName(verified, user.Email)
+				fields["display_name"] = user.DisplayName
+			}
+			email, emailErr := normalizeUserSuppliedEmail(verified.Email)
+			if user.EmailVerifiedAt == nil && verified.EmailVerified && emailErr == nil && email == strings.ToLower(strings.TrimSpace(user.Email)) {
+				now := time.Now()
+				user.EmailVerifiedAt = &now
+				fields["email_verified_at"] = now
+			}
+			if len(fields) == 0 {
+				return nil
+			}
+			user.UpdatedAt = time.Now()
+			fields["updated_at"] = user.UpdatedAt
+			return tx.UpdateUserFields(user.ID, fields)
+		})
+		if err != nil {
+			// A concurrent first login may have established the same mapping.
+			if attempt == 0 {
+				latest, lookupErr := s.userOAuthIdentityRepo.GetByProviderUserID(verified.Provider, verified.ProviderUserID)
+				if lookupErr == nil && latest != nil && (before == nil || err == errGoogleLoginMappingChanged) {
+					continue
+				}
+			}
+			return nil, err
+		}
+		if created && s.memberLevelSvc != nil {
+			_ = s.memberLevelSvc.AssignDefaultLevel(user.ID)
+			if refreshed, refreshErr := s.userRepo.GetByID(user.ID); refreshErr == nil && refreshed != nil {
+				user = refreshed
 			}
 		}
-		if err := s.syncOIDCEmailVerification(user, verified); err != nil {
-			return nil, err
-		}
 		return s.completeExternalLogin(user, constants.LoginLogSourceOIDC)
 	}
-
-	user, _, err := s.findOrCreateOIDCUser(verified)
-	if err != nil {
-		return nil, err
-	}
-	identity = &externalidentitydomain.Identity{
-		UserID:         user.ID,
-		Provider:       verified.Provider,
-		ProviderUserID: verified.ProviderUserID,
-		Username:       verified.Username,
-		AvatarURL:      verified.AvatarURL,
-		AuthAt:         &verified.AuthAt,
-		CreatedAt:      time.Now(),
-		UpdatedAt:      time.Now(),
-	}
-	if err := s.userOAuthIdentityRepo.Create(identity); err != nil {
-		// 并发下同一身份可能已被另一个请求绑定，落回已有绑定。
-		existing, getErr := s.userOAuthIdentityRepo.GetByProviderUserID(verified.Provider, verified.ProviderUserID)
-		if getErr != nil || existing == nil {
-			return nil, err
-		}
-		identity = existing
-		user, err = s.getActiveUserByID(existing.UserID)
-		if err != nil {
-			return nil, err
-		}
-		if err := s.syncOIDCEmailVerification(user, verified); err != nil {
-			return nil, err
-		}
-		return s.completeExternalLogin(user, constants.LoginLogSourceOIDC)
-	}
-	if err := s.syncOIDCEmailVerification(user, verified); err != nil {
-		return nil, err
-	}
-	return s.completeExternalLogin(user, constants.LoginLogSourceOIDC)
+	return nil, errGoogleLoginMappingChanged
 }
 
 // findOrCreateOIDCUser 按邮箱找已有用户；不存在则直接建号。
 // SSO 是本部署唯一的注册入口：IdP（自有 Casdoor）注册时已强制邮箱验证码，
 // 因此这里有意不检查站点注册开关——关闭本地注册不影响经 IdP 的新用户建号。
 // 只有已验证邮箱可以首次关联；不同 subject 不得覆盖已有同提供方绑定。
-func (s *Service) findOrCreateOIDCUser(verified *oidcauthapp.IdentityVerified) (*userdomain.User, bool, error) {
+func (s *Service) findOrCreateOIDCUser(tx AuthTransaction, verified *oidcauthapp.IdentityVerified) (*userdomain.User, bool, error) {
 	email, err := normalizeUserSuppliedEmail(verified.Email)
 	if err != nil || !verified.EmailVerified {
 		return nil, false, ErrEmailNotVerified
 	}
 
-	user, err := s.userRepo.GetByEmail(email)
+	user, err := tx.GetUserByEmail(email)
 	if err != nil {
 		return nil, false, err
 	}
@@ -183,7 +216,7 @@ func (s *Service) findOrCreateOIDCUser(verified *oidcauthapp.IdentityVerified) (
 		if strings.ToLower(strings.TrimSpace(user.Status)) != constants.UserStatusActive {
 			return nil, false, ErrUserDisabled
 		}
-		bound, err := s.userOAuthIdentityRepo.GetByUserProvider(user.ID, verified.Provider)
+		bound, err := tx.GetIdentityByUserProvider(user.ID, verified.Provider)
 		if err != nil {
 			return nil, false, err
 		}
@@ -215,39 +248,10 @@ func (s *Service) findOrCreateOIDCUser(verified *oidcauthapp.IdentityVerified) (
 		CreatedAt:             now,
 		UpdatedAt:             now,
 	}
-	if err := s.userRepo.Create(user); err != nil {
-		// 同邮箱注册竞争：落回已存在用户。
-		existing, getErr := s.userRepo.GetByEmail(email)
-		if getErr != nil || existing == nil {
-			return nil, false, err
-		}
-		if strings.ToLower(strings.TrimSpace(existing.Status)) != constants.UserStatusActive {
-			return nil, false, ErrUserDisabled
-		}
-		return existing, false, nil
-	}
-	if s.memberLevelSvc != nil {
-		_ = s.memberLevelSvc.AssignDefaultLevel(user.ID)
-		// 同步内存对象的等级，避免调用方后续 Update(Save) 用零值覆盖数据库
-		if refreshed, err := s.userRepo.GetByID(user.ID); err == nil && refreshed != nil {
-			user.MemberLevelID = refreshed.MemberLevelID
-		}
+	if err := tx.CreateUser(user); err != nil {
+		return nil, false, err
 	}
 	return user, true, nil
-}
-
-func (s *Service) syncOIDCEmailVerification(user *userdomain.User, verified *oidcauthapp.IdentityVerified) error {
-	if user.EmailVerifiedAt != nil || !verified.EmailVerified {
-		return nil
-	}
-	email, err := normalizeUserSuppliedEmail(verified.Email)
-	if err != nil || email != strings.ToLower(strings.TrimSpace(user.Email)) {
-		return nil
-	}
-	now := time.Now()
-	user.EmailVerifiedAt = &now
-	user.UpdatedAt = now
-	return s.userRepo.Update(user)
 }
 
 func resolveOIDCDisplayName(verified *oidcauthapp.IdentityVerified, email string) string {
@@ -279,8 +283,9 @@ func applyOIDCIdentity(verified *oidcauthapp.IdentityVerified, identity *externa
 		identity.Username = verified.Username
 		changed = true
 	}
-	if identity.AvatarURL != verified.AvatarURL {
-		identity.AvatarURL = verified.AvatarURL
+	avatar, present := oidcAvatar(verified)
+	if present && identity.AvatarURL != avatar {
+		identity.AvatarURL = avatar
 		changed = true
 	}
 	if identity.AuthAt == nil || !identity.AuthAt.Equal(verified.AuthAt) {
@@ -289,6 +294,18 @@ func applyOIDCIdentity(verified *oidcauthapp.IdentityVerified, identity *externa
 		changed = true
 	}
 	return changed
+}
+
+func oidcAvatar(verified *oidcauthapp.IdentityVerified) (string, bool) {
+	value := strings.TrimSpace(verified.AvatarURL)
+	if value == "" {
+		return "", verified.AvatarPresent
+	}
+	parsed, err := url.Parse(value)
+	if err != nil || (parsed.Scheme != "https" && parsed.Scheme != "http") || parsed.Host == "" || parsed.User != nil {
+		return "", false
+	}
+	return value, true
 }
 
 // OIDCBinding 通用 OIDC 绑定视图。

@@ -28,6 +28,7 @@ type IdentityVerified struct {
 	Username       string
 	DisplayName    string
 	AvatarURL      string
+	AvatarPresent  bool // Distinguishes an explicit empty avatar from an omitted claim.
 	AuthAt         time.Time
 }
 
@@ -132,7 +133,7 @@ func (s *Service) PublicConfig() map[string]interface{} {
 		"enabled":            enabled,
 		"only_enabled":       cfg.OnlyEnabled,
 		"display_name":       cfg.DisplayName,
-		"account_url":        identityPageURL(cfg, "login", cfg.Organization),
+		"account_url":        settingssecurity.OIDCIdentityPageURL(cfg.Issuer, "/account"),
 		"password_reset_url": identityPageURL(cfg, "forget", applicationName),
 	}
 }
@@ -150,11 +151,17 @@ func (s *Service) currentConfig() config.OIDCAuthConfig {
 }
 
 func identityPageURL(cfg config.OIDCAuthConfig, page, name string) string {
-	issuer, err := url.Parse(cfg.Issuer)
-	if err != nil || (issuer.Scheme != "http" && issuer.Scheme != "https") || issuer.Host == "" || name == "" {
+	if name == "" {
 		return ""
 	}
-	return cfg.Issuer + "/" + page + "/" + url.PathEscape(name)
+	return settingssecurity.OIDCIdentityPageURL(cfg.Issuer, "/"+page+"/"+url.PathEscape(name))
+}
+
+func optionalAvatar(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return strings.TrimSpace(*value)
 }
 
 func normalizeConfig(cfg config.OIDCAuthConfig) config.OIDCAuthConfig {

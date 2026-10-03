@@ -21,7 +21,8 @@ func TestAdminUserHTTPLivesInTransport(t *testing.T) {
 		"NewAdminHandler", "GetAdminUsers", "GetAdminUser", "UpdateAdminUser",
 		"UnbindAdminUserTelegram", "UnbindAdminUserGoogle", "GetAdminUserCouponUsages", "BatchUpdateUserStatus",
 	})
-	assertDirectoryGoFileBudget(t, transportRoot, 3)
+	// Identity ownership policy adds one transport regression test file.
+	assertDirectoryGoFileBudget(t, transportRoot, 4)
 
 	legacy := filepath.Join(repositoryRoot, "internal", "http", "handlers", "admin", "admin_user.go")
 	if _, err := os.Stat(legacy); err == nil {

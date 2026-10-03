@@ -636,7 +636,7 @@ func (s *Service) completeExternalLogin(user *userdomain.User, source string) (*
 	now := time.Now()
 	user.LastLoginAt = &now
 	user.UpdatedAt = now
-	if err := s.userRepo.Update(user); err != nil {
+	if err := s.userRepo.UpdateFields(user.ID, map[string]interface{}{"last_login_at": now, "updated_at": now}); err != nil {
 		return nil, err
 	}
 	_ = cache.SetUserAuthState(context.Background(), cache.BuildUserAuthState(user))

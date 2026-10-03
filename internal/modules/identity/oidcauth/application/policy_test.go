@@ -15,7 +15,7 @@ func TestUnifiedPublicPolicy(t *testing.T) {
 	cfg := config.OIDCAuthConfig{Enabled: true, OnlyEnabled: true, Issuer: "https://auth.example.com/", ClientID: "client", ClientSecret: "secret", RedirectURI: "https://store.example.com/callback", ApplicationID: "admin/store", Organization: "kano"}
 	svc := NewService(cfg)
 	public := svc.PublicConfig()
-	if public["only_enabled"] != true || public["enabled"] != true || public["account_url"] != "https://auth.example.com/login/kano" || public["password_reset_url"] != "https://auth.example.com/forget/store" {
+	if public["only_enabled"] != true || public["enabled"] != true || public["account_url"] != "https://auth.example.com/account" || public["password_reset_url"] != "https://auth.example.com/forget/store" {
 		t.Fatalf("public=%v", public)
 	}
 	if _, exists := public["client_secret"]; exists {

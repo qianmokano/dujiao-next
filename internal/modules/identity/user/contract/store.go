@@ -30,6 +30,7 @@ type Store interface {
 	ListByIDs([]uint) ([]userdomain.User, error)
 	Create(*userdomain.User) error
 	Update(*userdomain.User) error
+	UpdateFields(uint, map[string]interface{}) error
 	IncrementTotalRecharged(uint, decimal.Decimal) error
 	IncrementTotalSpent(uint, decimal.Decimal) error
 	UpdateMemberLevelIfCurrent(uint, uint, uint) (int64, error)

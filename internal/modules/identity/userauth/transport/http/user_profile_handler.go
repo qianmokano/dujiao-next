@@ -1,7 +1,9 @@
 package userauthhttp
 
 import (
+	"encoding/json"
 	"errors"
+	"github.com/dujiao-next/internal/i18n"
 
 	userdomain "github.com/dujiao-next/internal/modules/identity/user/domain"
 
@@ -10,11 +12,13 @@ import (
 	"github.com/dujiao-next/internal/platform/http/response"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 )
 
 var (
-	ErrProfileEmpty = errors.New("user profile empty")
-	ErrUserNotFound = errors.New("user not found")
+	ErrProfileEmpty        = errors.New("user profile empty")
+	ErrUserNotFound        = errors.New("user not found")
+	ErrUnifiedAuthRequired = errors.New("unified authentication required")
 )
 
 // UserProfileService 是用户资料端点所需的最小端口。
@@ -23,6 +27,8 @@ type UserProfileService interface {
 	ResolveEmailChangeMode(user *userdomain.User) (string, error)
 	ResolvePasswordChangeMode(user *userdomain.User) (string, error)
 	UpdateProfile(userID uint, nickname, locale *string) (*userdomain.User, error)
+	CheckLocalIdentityManagement() error
+	GetProfileAvatar(userID uint) (string, error)
 }
 
 // UserProfileHandler 处理当前用户资料 HTTP 请求。
@@ -77,7 +83,12 @@ func (h *UserProfileHandler) userProfileResponse(user *userdomain.User) (userpre
 	if err != nil {
 		return userpresenter.UserProfileResp{}, err
 	}
-	return userpresenter.NewUserProfileResp(user, emailMode, passwordMode), nil
+	profile := userpresenter.NewUserProfileResp(user, emailMode, passwordMode)
+	profile.AvatarURL, err = h.service.GetProfileAvatar(user.ID)
+	if err != nil {
+		return userpresenter.UserProfileResp{}, err
+	}
+	return profile, nil
 }
 
 // UpdateUserProfile 更新用户资料。
@@ -88,14 +99,33 @@ func (h *UserProfileHandler) UpdateUserProfile(c *gin.Context) {
 	}
 
 	var req UserProfileUpdateRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.ShouldBindBodyWith(&req, binding.JSON); err != nil {
 		ginutil.RespondBindError(c, err)
 		return
+	}
+	var fields map[string]json.RawMessage
+	if err := c.ShouldBindBodyWith(&fields, binding.JSON); err != nil {
+		ginutil.RespondBindError(c, err)
+		return
+	}
+	for _, key := range []string{"nickname", "display_name", "username", "email", "password", "avatar", "avatar_url", "email_verified", "email_verified_at", "auth_bindings", "auth_identities", "oauth_identities"} {
+		if _, exists := fields[key]; exists {
+			if err := h.service.CheckLocalIdentityManagement(); err != nil {
+				if errors.Is(err, ErrUnifiedAuthRequired) {
+					response.ErrorWithHTTPStatus(c, response.CodeForbidden, response.CodeForbidden, i18n.T(i18n.ResolveLocale(c), "error.unified_auth_required"))
+				} else {
+					ginutil.RespondError(c, response.CodeInternal, "error.user_update_failed", err)
+				}
+				return
+			}
+		}
 	}
 
 	user, err := h.service.UpdateProfile(id, req.Nickname, req.Locale)
 	if err != nil {
 		switch {
+		case errors.Is(err, ErrUnifiedAuthRequired):
+			response.ErrorWithHTTPStatus(c, response.CodeForbidden, response.CodeForbidden, i18n.T(i18n.ResolveLocale(c), "error.unified_auth_required"))
 		case errors.Is(err, ErrProfileEmpty):
 			ginutil.RespondError(c, response.CodeBadRequest, "error.profile_empty", nil)
 		case errors.Is(err, ErrUserNotFound):

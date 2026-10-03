@@ -131,7 +131,7 @@ import LoginHistorySection from '../../components/security/LoginHistorySection.v
 import PasswordChangeForm from '../../components/security/PasswordChangeForm.vue'
 import TwoFactorSection from '../../components/security/TwoFactorSection.vue'
 import IdentityManagementNotice from '../../components/security/IdentityManagementNotice.vue'
-import { isUnifiedAuthOnly, safeIdentityURL } from '../../utils/unifiedAuth'
+import { safeIdentityURL } from '../../utils/unifiedAuth'
 
 const { t } = useI18n()
 const { isAtlas, success: notifySuccess } = useFeedback()
@@ -141,7 +141,7 @@ const appStore = useAppStore()
 const telegramMiniAppStore = useTelegramMiniAppStore()
 const userProfileStore = useUserProfileStore()
 const userAuthStore = useUserAuthStore()
-const unifiedAuthOnly = computed(() => isUnifiedAuthOnly(appStore.config?.oidc_auth))
+const unifiedAuthOnly = computed(() => !appStore.identityPolicyReady || appStore.config?.oidc_auth?.only_enabled !== false)
 const accountURL = computed(() => safeIdentityURL(appStore.config?.oidc_auth?.account_url))
 
 const securityForm = reactive({

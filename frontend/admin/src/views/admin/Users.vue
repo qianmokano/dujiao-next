@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useDebounceFn } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import { adminAPI } from '@/api/admin'
+import { localIdentityEditable, safeAdminURL } from '@/utils/identityPolicy'
 import type { AdminUser, AdminMemberLevel } from '@/api/types'
 import IdCell from '@/components/IdCell.vue'
 import { userStatusClass, userStatusLabel } from '@/utils/status'
@@ -24,6 +25,23 @@ import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-vue-next'
 
 const { t } = useI18n()
 const loading = ref(true)
+const identityPolicyReady = ref(false)
+const identityEditable = ref(false)
+const passportAdminURL = ref('')
+const fetchIdentityPolicy = async () => {
+  identityPolicyReady.value = false
+  identityEditable.value = false
+  passportAdminURL.value = ''
+  try {
+    const res = await adminAPI.getOIDCAuthSettings()
+    const data = res.data?.data
+    identityPolicyReady.value = typeof data?.only_enabled === 'boolean'
+    identityEditable.value = localIdentityEditable(data)
+    passportAdminURL.value = safeAdminURL(data?.admin_url)
+  } catch {
+    error.value = t('admin.settings.registration.passportUnavailable')
+  }
+}
 const { refreshing, refreshList } = useListRefresh()
 const users = ref<AdminUser[]>([])
 const selectedIds = ref<number[]>([])
@@ -215,6 +233,7 @@ const changePageSize = (size: number) => {
 }
 
 const openEditModal = (user: AdminUser) => {
+  void fetchIdentityPolicy()
   editingId.value = user.id
   form.email = user.email || ''
   form.nickname = user.display_name || ''
@@ -236,16 +255,18 @@ const closeModal = () => {
 }
 
 const handleSubmit = async () => {
-  if (!editingId.value) return
-  if (!validate({ email: form.email, nickname: form.nickname } as Record<string, unknown>)) return
+  if (!editingId.value || !identityPolicyReady.value) return
+  if (identityEditable.value && !validate({ email: form.email, nickname: form.nickname } as Record<string, unknown>)) return
   submitting.value = true
   try {
     await adminAPI.updateUser(editingId.value, {
-      email: form.email,
-      nickname: form.nickname,
-      password: form.password || undefined,
+      ...(identityEditable.value ? {
+        email: form.email,
+        nickname: form.nickname,
+        password: form.password || undefined,
+        email_verified: form.email_verified === 'verified',
+      } : {}),
       locale: form.locale,
-      email_verified: form.email_verified === 'verified',
       status: form.status,
       admin_note: form.admin_note,
     })
@@ -494,18 +515,24 @@ onMounted(() => {
           <div class="grid grid-cols-1 gap-4">
             <div>
               <label class="block text-xs font-medium text-muted-foreground mb-1.5">{{ t('admin.users.form.email') }}</label>
-              <Input v-model="form.email" :placeholder="t('admin.users.form.emailPlaceholder')" />
+              <Input v-model="form.email" :disabled="!identityEditable" :placeholder="t('admin.users.form.emailPlaceholder')" />
               <p v-if="formErrors.email" class="text-xs text-destructive mt-1">{{ formErrors.email }}</p>
             </div>
             <div>
               <label class="block text-xs font-medium text-muted-foreground mb-1.5">{{ t('admin.users.form.nickname') }}</label>
-              <Input v-model="form.nickname" :placeholder="t('admin.users.form.nicknamePlaceholder')" />
+              <Input v-model="form.nickname" :disabled="!identityEditable" :placeholder="t('admin.users.form.nicknamePlaceholder')" />
               <p v-if="formErrors.nickname" class="text-xs text-destructive mt-1">{{ formErrors.nickname }}</p>
             </div>
             <div>
-              <label class="block text-xs font-medium text-muted-foreground mb-1.5">{{ t('admin.users.form.password') }}</label>
-              <Input v-model="form.password" type="password" :placeholder="t('admin.users.form.passwordPlaceholder')" />
-              <p class="mt-1 text-xs text-muted-foreground">{{ t('admin.users.form.passwordTip') }}</p>
+              <template v-if="identityEditable">
+                <label class="block text-xs font-medium text-muted-foreground mb-1.5">{{ t('admin.users.form.password') }}</label>
+                <Input v-model="form.password" type="password" :placeholder="t('admin.users.form.passwordPlaceholder')" />
+                <p class="mt-1 text-xs text-muted-foreground">{{ t('admin.users.form.passwordTip') }}</p>
+              </template>
+              <template v-else>
+                <p class="text-xs text-muted-foreground">{{ t('admin.settings.registration.passportHint') }}</p>
+                <a v-if="passportAdminURL" :href="passportAdminURL" target="_blank" rel="noopener noreferrer" class="text-sm text-primary underline">{{ t('admin.settings.registration.passportAdmin') }}</a>
+              </template>
             </div>
             <div>
               <label class="block text-xs font-medium text-muted-foreground mb-1.5">{{ t('admin.users.form.locale') }}</label>
@@ -522,7 +549,7 @@ onMounted(() => {
             </div>
             <div>
               <label class="block text-xs font-medium text-muted-foreground mb-1.5">{{ t('admin.users.form.emailVerifiedStatus') }}</label>
-              <Select v-model="form.email_verified">
+              <Select v-model="form.email_verified" :disabled="!identityEditable">
                 <SelectTrigger class="h-9 w-full">
                   <SelectValue :placeholder="t('admin.users.emailVerification.verified')" />
                 </SelectTrigger>
@@ -556,7 +583,7 @@ onMounted(() => {
 
           <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <Button class="w-full sm:w-auto" type="button" variant="outline" @click="closeModal">{{ t('admin.common.cancel') }}</Button>
-            <Button class="w-full sm:w-auto" type="submit" :disabled="submitting">{{ t('admin.common.save') }}</Button>
+            <Button class="w-full sm:w-auto" type="submit" :disabled="submitting || !identityPolicyReady">{{ t('admin.common.save') }}</Button>
           </div>
         </form>
       </DialogScrollContent>

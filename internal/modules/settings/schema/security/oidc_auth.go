@@ -198,7 +198,22 @@ func MaskOIDCAuthSettingForAdmin(setting OIDCAuthSetting) jsonmap.JSON {
 		"organization":      normalized.Organization,
 		"redirect_uri":      normalized.RedirectURI,
 		"display_name":      normalized.DisplayName,
+		"admin_url":         OIDCIdentityPageURL(normalized.Issuer, "/login/built-in"),
 	}
+}
+
+// OIDCIdentityPageURL derives a browser entry from a valid issuer origin.
+func OIDCIdentityPageURL(issuer, path string) string {
+	u, err := url.Parse(strings.TrimSpace(issuer))
+	if err != nil || u.Hostname() == "" || u.User != nil || u.RawQuery != "" || u.Fragment != "" || (u.Path != "" && u.Path != "/") {
+		return ""
+	}
+	if u.Scheme != "https" && !(u.Scheme == "http" && (u.Hostname() == "localhost" || u.Hostname() == "127.0.0.1" || u.Hostname() == "::1")) {
+		return ""
+	}
+	u.Path = path
+	u.RawPath = ""
+	return u.String()
 }
 
 // DecodeOIDCAuthSetting 从持久化 JSON 解码，并对缺失字段使用 fallback。

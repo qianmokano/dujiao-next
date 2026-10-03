@@ -57,6 +57,10 @@ func (a adminUserDirectoryAdapter) Update(user *userdomain.User) error {
 	return a.users.Update(user)
 }
 
+func (a adminUserDirectoryAdapter) UpdateFields(userID uint, fields map[string]interface{}) error {
+	return a.users.UpdateFields(userID, fields)
+}
+
 func (a adminUserDirectoryAdapter) BatchUpdateStatus(ids []uint, status string) error {
 	return a.users.BatchUpdateStatus(ids, status)
 }

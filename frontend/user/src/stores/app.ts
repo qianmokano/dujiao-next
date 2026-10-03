@@ -13,6 +13,7 @@ export const useAppStore = defineStore('app', () => {
     const locale = ref(detectLocale())
     const config = ref<any>(null)
     const loading = ref(false)
+    const identityPolicyReady = ref(false)
     // 服务器与客户端的时间偏移量（毫秒），serverTime = clientTime + offset
     const serverTimeOffset = ref(0)
     const siteIconHref = computed(() => {
@@ -76,10 +77,12 @@ export const useAppStore = defineStore('app', () => {
             return
         }
         if (!force) loading.value = true
+        identityPolicyReady.value = false
         try {
             const requestTime = Date.now()
             const response = await configAPI.get()
             config.value = response.data.data
+            identityPolicyReady.value = typeof config.value?.oidc_auth?.only_enabled === 'boolean'
             // 计算服务器与客户端的时间偏移量
             if (config.value?.server_time) {
                 const responseTime = Date.now()
@@ -112,6 +115,7 @@ export const useAppStore = defineStore('app', () => {
     const getServerDate = () => new Date(getServerTime())
 
     return {
+        identityPolicyReady,
         locale,
         config,
         loading,

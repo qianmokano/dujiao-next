@@ -4,9 +4,7 @@
       <header class="relative mb-8 overflow-hidden rounded-3xl border bg-card shadow-sm">
         <div class="relative flex flex-col gap-6 p-6 lg:flex-row lg:items-center lg:justify-between lg:p-8">
           <div class="flex min-w-0 items-center gap-4">
-            <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-2xl font-black text-primary">
-              {{ displayInitial }}
-            </div>
+            <ProfileAvatar :src="userProfileStore.profile?.avatar_url" :initial="displayInitial" class="h-16 w-16 rounded-2xl bg-primary/10 text-2xl font-black text-primary" />
             <div class="min-w-0">
               <p class="text-xs font-semibold uppercase tracking-[0.24em] text-primary">
                 {{ t('personalCenter.title') }}
@@ -293,6 +291,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import ProfilePanel from './personal/ProfilePanel.vue'
+import ProfileAvatar from '../components/shared/ProfileAvatar.vue'
 import SecurityPanel from './personal/SecurityPanel.vue'
 import OrdersPanel from './personal/OrdersPanel.vue'
 import WalletPanel from './personal/WalletPanel.vue'

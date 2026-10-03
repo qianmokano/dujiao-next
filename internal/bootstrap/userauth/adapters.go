@@ -48,6 +48,14 @@ func (a userProfileTransportAdapter) ResolvePasswordChangeMode(user *userdomain.
 	return mode, mapUserAuthTransportError(err)
 }
 
+func (a userProfileTransportAdapter) GetProfileAvatar(userID uint) (string, error) {
+	return a.service.GetProfileAvatar(userID)
+}
+
+func (a userProfileTransportAdapter) CheckLocalIdentityManagement() error {
+	return mapUserAuthTransportError(a.service.CheckLocalIdentityManagement())
+}
+
 func (a userProfileTransportAdapter) UpdateProfile(userID uint, nickname, locale *string) (*userdomain.User, error) {
 	user, err := a.service.UpdateProfile(userID, nickname, locale)
 	return user, mapUserAuthTransportError(err)
@@ -761,6 +769,7 @@ func mapUserAuthTransportError(err error) error {
 		source error
 		target error
 	}{
+		{userauthapp.ErrUnifiedAuthRequired, userauthtransport.ErrUnifiedAuthRequired},
 		{userauthapp.ErrProfileEmpty, userauthtransport.ErrProfileEmpty},
 		{userauthapp.ErrNotFound, userauthtransport.ErrUserNotFound},
 		{totpapplication.ErrSubjectNotFound, userauthtransport.ErrUserNotFound},
