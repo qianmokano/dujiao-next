@@ -2,6 +2,7 @@ export interface UserProfileData {
     id: number
     email: string
     nickname: string
+    avatar_url?: string
     email_verified_at?: string | null
     locale: string
     member_level_id?: number

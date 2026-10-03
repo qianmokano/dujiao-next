@@ -77,6 +77,14 @@ func (r *Store) Update(user *userdomain.User) error {
 		Updates(user).Error
 }
 
+// UpdateFields updates only the supplied account fields, preserving concurrent business changes.
+func (r *Store) UpdateFields(userID uint, fields map[string]interface{}) error {
+	if userID == 0 || len(fields) == 0 {
+		return nil
+	}
+	return r.db.Model(&userdomain.User{}).Where("id = ? AND deleted_at IS NULL", userID).Updates(fields).Error
+}
+
 // IncrementTotalRecharged 原子累加用户累计充值金额。
 func (r *Store) IncrementTotalRecharged(userID uint, amount decimal.Decimal) error {
 	return r.incrementMoneyColumn(userID, "total_recharged", amount)

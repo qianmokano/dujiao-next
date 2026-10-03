@@ -2963,6 +2963,9 @@ const messages = {
         registration: {
           title: '注册配置',
           subtitle: '控制前台用户注册行为',
+          passportHint: '昵称、头像、邮箱、密码、注册和多因素验证由 Kano 通行证管理。本站保留业务设置和独立管理员安全。',
+          passportAdmin: '打开通行证后台',
+          passportUnavailable: '请检查通行证设置和有效的 Issuer 地址。',
           registrationEnabled: '开放注册',
           registrationEnabledDesc: '关闭后前台将无法注册新账号',
           emailVerificationEnabled: '邮箱验证',
@@ -7438,6 +7441,9 @@ const messages = {
         registration: {
           title: '註冊配置',
           subtitle: '控制前台用戶註冊行為',
+          passportHint: '暱稱、頭像、信箱、密碼、註冊與多因素驗證由 Kano 通行證管理。本站保留業務設定與獨立管理員安全。',
+          passportAdmin: '開啟通行證後台',
+          passportUnavailable: '請檢查通行證設定與有效的 Issuer 位址。',
           registrationEnabled: '開放註冊',
           registrationEnabledDesc: '關閉後前台將無法註冊新帳號',
           emailVerificationEnabled: '郵箱驗證',
@@ -11913,6 +11919,9 @@ const messages = {
         registration: {
           title: 'Registration',
           subtitle: 'Control front-end user registration behavior',
+          passportHint: 'Kano Passport manages names, avatars, email, passwords, registration and MFA. Business settings and local administrator security remain here.',
+          passportAdmin: 'Open Passport administration',
+          passportUnavailable: 'Check Passport settings and a valid Issuer URL.',
           registrationEnabled: 'Enable Registration',
           registrationEnabledDesc: 'When disabled, new users cannot register on the front-end',
           emailVerificationEnabled: 'Email Verification',

@@ -24,6 +24,7 @@ type AuthTransaction interface {
 	GetUserByIDForUpdate(userID uint) (*userdomain.User, error)
 	CreateUser(user *userdomain.User) error
 	UpdateUser(user *userdomain.User) error
+	UpdateUserFields(userID uint, fields map[string]interface{}) error
 	GetIdentityByProviderUserID(provider, providerUserID string) (*externalidentitydomain.Identity, error)
 	GetIdentityByUserProvider(userID uint, provider string) (*externalidentitydomain.Identity, error)
 	ListIdentitiesByUserID(userID uint) ([]externalidentitydomain.Identity, error)

@@ -8,6 +8,8 @@
 
     <PageFeedback v-if="profileAlert" class="mb-5" :level="profileAlert.level" :message="profileAlert.message" />
 
+    <IdentityManagementNotice v-if="!localIdentityEditable" :href="accountURL" class="mb-5" />
+
     <form class="space-y-6" @submit.prevent="handleSaveProfile">
       <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
         <div class="md:col-span-2">
@@ -19,6 +21,7 @@
           <Label class="mb-2 block">{{ t('personalCenter.profile.nicknameLabel') }}</Label>
           <Input
             v-model="profileForm.nickname"
+            :disabled="!localIdentityEditable"
             :placeholder="t('personalCenter.profile.nicknamePlaceholder')"
             class="h-11"
           />
@@ -50,12 +53,15 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { UserCircle } from 'lucide-vue-next'
 import type { PageAlert } from '../../utils/alerts'
 import { useFeedback } from '../../composables/useFeedback'
 import { useUserProfileStore } from '../../stores/userProfile'
+import { useAppStore } from '../../stores/app'
+import { safeIdentityURL } from '../../utils/unifiedAuth'
+import IdentityManagementNotice from '../../components/security/IdentityManagementNotice.vue'
 import PanelHeading from '../../components/shared/PanelHeading.vue'
 import PageFeedback from '../../components/PageFeedback.vue'
 import { Badge } from '@/components/ui/badge'
@@ -67,6 +73,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 const { t } = useI18n()
 const { success: notifySuccess } = useFeedback()
 const userProfileStore = useUserProfileStore()
+const appStore = useAppStore()
+const localIdentityEditable = computed(() => appStore.identityPolicyReady && appStore.config?.oidc_auth?.only_enabled === false)
+const accountURL = computed(() => safeIdentityURL(appStore.config?.oidc_auth?.account_url))
 
 const profileForm = reactive({
   nickname: '',
@@ -78,7 +87,7 @@ const profileAlert = ref<PageAlert | null>(null)
 const handleSaveProfile = async () => {
   profileAlert.value = null
   const payload = {
-    nickname: profileForm.nickname.trim(),
+    ...(localIdentityEditable.value ? { nickname: profileForm.nickname.trim() } : {}),
     locale: profileForm.locale,
   }
   const ok = await userProfileStore.saveProfile(payload)

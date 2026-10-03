@@ -138,12 +138,12 @@ func (s *Service) getAccount(ctx context.Context, client *http.Client) (*Identit
 		return nil, fmt.Errorf("%w: get-account %s", ErrOIDCRemoteRejected, out.Msg)
 	}
 	var account struct {
-		ID            string `json:"id"`
-		Name          string `json:"name"`
-		DisplayName   string `json:"displayName"`
-		Email         string `json:"email"`
-		EmailVerified bool   `json:"emailVerified"`
-		Avatar        string `json:"avatar"`
+		ID            string  `json:"id"`
+		Name          string  `json:"name"`
+		DisplayName   string  `json:"displayName"`
+		Email         string  `json:"email"`
+		EmailVerified bool    `json:"emailVerified"`
+		Avatar        *string `json:"avatar"`
 	}
 	if err := json.Unmarshal(out.Data, &account); err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrOIDCRemoteRejected, err)
@@ -158,7 +158,8 @@ func (s *Service) getAccount(ctx context.Context, client *http.Client) (*Identit
 		EmailVerified:  account.EmailVerified,
 		Username:       strings.TrimSpace(account.Name),
 		DisplayName:    strings.TrimSpace(account.DisplayName),
-		AvatarURL:      strings.TrimSpace(account.Avatar),
+		AvatarURL:      optionalAvatar(account.Avatar),
+		AvatarPresent:  account.Avatar != nil,
 		AuthAt:         time.Now(),
 	}, nil
 }

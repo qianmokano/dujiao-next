@@ -79,6 +79,11 @@ func (s *Service) requireLocalIdentityManagement() error {
 	return nil
 }
 
+// CheckLocalIdentityManagement applies the same policy to transport-only identity fields.
+func (s *Service) CheckLocalIdentityManagement() error {
+	return s.requireLocalIdentityManagement()
+}
+
 // SetGoogleRedirectStore injects the Redis-backed single-use state store used
 // only by the redirect UX. Popup Google login remains independent of Redis.
 func (s *Service) SetGoogleRedirectStore(store GoogleRedirectStore) {

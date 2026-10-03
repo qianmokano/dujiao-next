@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { adminAPI } from '@/api/admin'
+import { safeAdminURL } from '@/utils/identityPolicy'
 import RichEditor from '@/components/RichEditor.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -300,7 +301,10 @@ const oidcForm = reactive({
   display_name: '',
   application_id: '',
   organization: '',
+  admin_url: '',
 })
+const identityPolicyReady = ref(false)
+const localRegistrationVisible = computed(() => identityPolicyReady.value && !oidcForm.only_enabled)
 
 const createOrderEmailLocalizedTemplate = () => ({ subject: '', body: '' })
 const createOrderEmailSceneTemplate = () => ({
@@ -384,6 +388,7 @@ const notifyErrorIfNeeded = (err: unknown, fallback: string) => {
 
 const fetchSettings = async () => {
   loading.value = true
+  identityPolicyReady.value = false
   try {
     const [siteRes, orderRes, smtpRes, captchaRes, telegramRes, googleRes, oidcRes, dashboardRes, registrationRes, orderEmailTmplRes] = await Promise.all([
       adminAPI.getSettings({ key: 'site_config' }),
@@ -565,6 +570,8 @@ const fetchSettings = async () => {
       oidcForm.display_name = String(oidc.display_name || '')
       oidcForm.application_id = String(oidc.application_id || '')
       oidcForm.organization = String(oidc.organization || '')
+      oidcForm.admin_url = safeAdminURL(oidc.admin_url)
+      identityPolicyReady.value = typeof oidc.only_enabled === 'boolean'
     }
 
     if (dashboardRes.data && dashboardRes.data.data) {
@@ -622,6 +629,7 @@ const fetchSettings = async () => {
 }
 
 const saveRegistrationSettings = async () => {
+  if (!localRegistrationVisible.value) return
   await adminAPI.updateSettings({
     key: 'registration_config',
     value: {
@@ -782,6 +790,8 @@ const saveOIDCAuthSettings = async () => {
   oidcForm.display_name = String(data?.display_name || '')
   oidcForm.application_id = String(data?.application_id || '')
   oidcForm.organization = String(data?.organization || '')
+  oidcForm.admin_url = safeAdminURL(data?.admin_url)
+  identityPolicyReady.value = typeof data?.only_enabled === 'boolean'
 }
 
 const saveDashboardSettings = async () => {
@@ -906,7 +916,12 @@ onMounted(() => {
           <h2 class="text-lg font-semibold">{{ t('admin.settings.registration.title') }}</h2>
           <p class="mt-1 text-xs text-muted-foreground">{{ t('admin.settings.registration.subtitle') }}</p>
         </div>
-        <div class="space-y-4 p-6">
+        <div v-if="!localRegistrationVisible" class="space-y-3 p-6 text-sm">
+          <p class="text-muted-foreground">{{ t('admin.settings.registration.passportHint') }}</p>
+          <a v-if="identityPolicyReady && oidcForm.admin_url" :href="oidcForm.admin_url" target="_blank" rel="noopener noreferrer" class="text-primary underline">{{ t('admin.settings.registration.passportAdmin') }}</a>
+          <p v-else class="text-muted-foreground">{{ t('admin.settings.registration.passportUnavailable') }}</p>
+        </div>
+        <div v-else class="space-y-4 p-6">
           <div class="flex flex-col gap-3 rounded-lg border border-border bg-muted/20 px-4 py-3 sm:flex-row sm:items-center">
             <Switch id="registration-enabled" v-model="registrationForm.registration_enabled" />
             <div>

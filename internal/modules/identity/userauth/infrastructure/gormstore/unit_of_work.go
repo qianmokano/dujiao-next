@@ -128,6 +128,10 @@ func (t *transaction) UpdateUser(user *userdomain.User) error {
 		Updates(user).Error
 }
 
+func (t *transaction) UpdateUserFields(userID uint, fields map[string]interface{}) error {
+	return t.db.Model(&userdomain.User{}).Where("id = ? AND deleted_at IS NULL", userID).Updates(fields).Error
+}
+
 func (t *transaction) GetIdentityByProviderUserID(provider, providerUserID string) (*externalidentitydomain.Identity, error) {
 	provider = strings.ToLower(strings.TrimSpace(provider))
 	providerUserID = strings.TrimSpace(providerUserID)

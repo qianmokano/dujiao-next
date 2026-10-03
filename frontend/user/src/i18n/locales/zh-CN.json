@@ -313,6 +313,7 @@
     },
     "security": {
       "unifiedIdentityHint": "密码、身份邮箱和二步验证由统一账户管理。",
+      "unifiedSyncHint": "昵称和头像在 Kano 通行证修改后，下次登录同步。",
       "manageUnifiedIdentity": "管理统一账户",
       "title": "安全中心",
       "subtitle": "通过双验证码流程完成邮箱换绑",

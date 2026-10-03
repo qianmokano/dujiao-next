@@ -3,7 +3,7 @@
     <!-- 账户头部 -->
     <header class="mb-[22px] flex flex-wrap items-center justify-between gap-[18px] rounded-xl border bg-card px-7 py-[26px]">
       <div class="flex min-w-0 items-center gap-4">
-        <div class="grid h-[62px] w-[62px] flex-none place-items-center rounded-md bg-primary/10 text-[26px] font-extrabold text-primary">{{ displayInitial }}</div>
+        <ProfileAvatar :src="userProfileStore.profile?.avatar_url" :initial="displayInitial" class="h-[62px] w-[62px] rounded-md bg-primary/10 text-[26px] font-extrabold text-primary" />
         <div class="min-w-0">
           <p class="text-[13px] font-bold uppercase tracking-[0.04em] text-primary">{{ t('personalCenter.title') }}</p>
           <h1 class="my-1 text-[26px] font-extrabold">{{ userProfileStore.displayName }}</h1>
@@ -194,6 +194,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { getImageUrl } from '../../utils/image'
 import ProfilePanel from '../../views/personal/ProfilePanel.vue'
+import ProfileAvatar from '../../components/shared/ProfileAvatar.vue'
 import SecurityPanel from '../../views/personal/SecurityPanel.vue'
 import OrdersPanel from '../../views/personal/OrdersPanel.vue'
 import WalletPanel from '../../views/personal/WalletPanel.vue'

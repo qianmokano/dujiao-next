@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	oidcauthapp "github.com/dujiao-next/internal/modules/identity/oidcauth/application"
 	userdomain "github.com/dujiao-next/internal/modules/identity/user/domain"
 	"github.com/dujiao-next/internal/shared/passwordpolicy"
 
@@ -106,6 +107,11 @@ func (s *Service) ChangePassword(userID uint, oldPassword, newPassword string) e
 
 // UpdateProfile 更新用户资料
 func (s *Service) UpdateProfile(userID uint, nickname, locale *string) (*userdomain.User, error) {
+	if nickname != nil {
+		if err := s.requireLocalIdentityManagement(); err != nil {
+			return nil, err
+		}
+	}
 	if userID == 0 {
 		return nil, ErrNotFound
 	}
@@ -119,10 +125,12 @@ func (s *Service) UpdateProfile(userID uint, nickname, locale *string) (*userdom
 	}
 
 	updated := false
+	fields := map[string]interface{}{}
 	if nickname != nil {
 		trimmed := strings.TrimSpace(*nickname)
 		if trimmed != "" {
 			user.DisplayName = trimmed
+			fields["display_name"] = trimmed
 			updated = true
 		}
 	}
@@ -131,6 +139,7 @@ func (s *Service) UpdateProfile(userID uint, nickname, locale *string) (*userdom
 		trimmed := strings.TrimSpace(*locale)
 		if trimmed != "" {
 			user.Locale = trimmed
+			fields["locale"] = trimmed
 			updated = true
 		}
 	}
@@ -140,10 +149,27 @@ func (s *Service) UpdateProfile(userID uint, nickname, locale *string) (*userdom
 	}
 
 	user.UpdatedAt = time.Now()
-	if err := s.userRepo.Update(user); err != nil {
+	fields["updated_at"] = user.UpdatedAt
+	if err := s.userRepo.UpdateFields(user.ID, fields); err != nil {
 		return nil, err
 	}
 	return user, nil
+}
+
+// GetProfileAvatar reads the existing OIDC identity without adding a user column.
+func (s *Service) GetProfileAvatar(userID uint) (string, error) {
+	if s.userOAuthIdentityRepo == nil {
+		return "", nil
+	}
+	identity, err := s.userOAuthIdentityRepo.GetByUserProvider(userID, constants.UserOAuthProviderOIDC)
+	if err != nil || identity == nil {
+		return "", err
+	}
+	avatar, valid := oidcAvatar(&oidcauthapp.IdentityVerified{AvatarURL: identity.AvatarURL})
+	if !valid {
+		return "", nil
+	}
+	return avatar, nil
 }
 
 // SendChangeEmailCode 发送更换邮箱验证码

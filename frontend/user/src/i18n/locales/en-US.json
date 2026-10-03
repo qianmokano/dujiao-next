@@ -360,6 +360,7 @@
     },
     "security": {
       "unifiedIdentityHint": "Manage your password, identity email and two-factor authentication through your unified account.",
+      "unifiedSyncHint": "Update your name and avatar in Kano Passport. Changes sync on your next sign-in.",
       "manageUnifiedIdentity": "Manage unified account",
       "title": "Security",
       "subtitle": "Change email with double verification codes",
