@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/dujiao-next/internal/i18n"
+	"strings"
 
 	userdomain "github.com/dujiao-next/internal/modules/identity/user/domain"
 
@@ -108,8 +109,9 @@ func (h *UserProfileHandler) UpdateUserProfile(c *gin.Context) {
 		ginutil.RespondBindError(c, err)
 		return
 	}
-	for _, key := range []string{"nickname", "display_name", "username", "email", "password", "avatar", "avatar_url", "email_verified", "email_verified_at", "auth_bindings", "auth_identities", "oauth_identities"} {
-		if _, exists := fields[key]; exists {
+	for key := range fields {
+		switch strings.ToLower(key) {
+		case "nickname", "display_name", "username", "email", "password", "avatar", "avatar_url", "email_verified", "email_verified_at", "auth_bindings", "auth_identities", "oauth_identities", "identities", "identity_bindings":
 			if err := h.service.CheckLocalIdentityManagement(); err != nil {
 				if errors.Is(err, ErrUnifiedAuthRequired) {
 					response.ErrorWithHTTPStatus(c, response.CodeForbidden, response.CodeForbidden, i18n.T(i18n.ResolveLocale(c), "error.unified_auth_required"))
