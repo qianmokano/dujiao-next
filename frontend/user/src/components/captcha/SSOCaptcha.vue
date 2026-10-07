@@ -20,6 +20,9 @@ const { t } = useI18n()
       </button>
       <input :value="modelValue" autocomplete="off" class="h-11 min-w-0 flex-1 rounded-md border border-input bg-transparent px-3 text-sm" :aria-label="t('auth.common.passportCaptchaLabel')" :placeholder="t('auth.common.captchaPlaceholder')" @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)" />
     </div>
-    <TurnstileCaptcha v-else-if="challenge.type === 'turnstile'" :key="challenge.challenge" :site-key="challenge.site_key || ''" :model-value="modelValue" @update:model-value="emit('update:modelValue', $event)" />
+    <template v-else-if="challenge.type === 'turnstile'">
+      <TurnstileCaptcha :key="challenge.challenge" :site-key="challenge.site_key || ''" :model-value="modelValue" @update:model-value="emit('update:modelValue', $event)" />
+      <button type="button" class="text-sm text-primary" @click="emit('refresh')">{{ t('auth.common.refreshCaptcha') }}</button>
+    </template>
   </div>
 </template>

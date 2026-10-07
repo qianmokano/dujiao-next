@@ -13,6 +13,7 @@ export function useSSOCaptcha() {
 
   const invalidate = () => {
     generation += 1
+    loading.value = false
     challenge.value = null
     answer.value = ''
     activeAction = null

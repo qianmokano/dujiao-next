@@ -48,6 +48,18 @@ describe('passport challenge lifecycle', () => {
     expect(captcha.loading.value).toBe(false)
     expect(captcha.challenge.value).toBeNull()
   })
+  it('clears loading when a pending challenge is cancelled', async () => {
+    let finish!: (value: unknown) => void
+    mocks.prepare.mockImplementationOnce(() => new Promise(resolve => { finish = resolve }))
+    const captcha = useSSOCaptcha()
+    const pending = captcha.ensure('login', 'buyer')
+    expect(captcha.loading.value).toBe(true)
+    captcha.invalidate()
+    expect(captcha.loading.value).toBe(false)
+    finish(response({ required: true, challenge: 'stale', type: 'image' }))
+    expect(await pending).toBe(false)
+    expect(captcha.challenge.value).toBeNull()
+  })
   it('ignores stale responses after an account or operation changes', async () => {
     let finish!: (value: unknown) => void
     mocks.prepare.mockImplementationOnce(() => new Promise(resolve => { finish = resolve }))
@@ -84,6 +96,8 @@ describe('passport CAPTCHA field', () => {
     expect(root.querySelector('.turnstile')?.getAttribute('data-key')).toBe('public')
     root.querySelector<HTMLButtonElement>('.turnstile')!.click()
     expect(answer).toHaveBeenCalledWith('solved')
+    root.querySelector<HTMLButtonElement>('button.text-primary')!.click()
+    expect(refresh).toHaveBeenCalledTimes(2)
     props.challenge = { required:true, type:'turnstile' }; await nextTick()
     expect(root.querySelector('.turnstile')?.getAttribute('data-key')).toBe('')
     props.challenge = { required:true, type:'unsupported' }; await nextTick()

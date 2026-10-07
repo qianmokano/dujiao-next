@@ -1,5 +1,17 @@
 # Casdoor 统一登录部署手册(store + sub2api 账号互通)
 
+## 当前流程（2026-10-07）
+
+商城使用独立 `sso_auth` 设置：`enabled`、`only_enabled`、`issuer`、`organization`、`application_id`、`display_name`；后台 API 为 `/api/v1/admin/settings/sso-auth`。网关使用独立的 `sso_issuer_url`、组织、应用及三个策略开关，参见网关仓库的 `deploy/KANO-SSO.md`。
+
+两个站点均通过 `/api/v1/auth/sso/password-login`、`/sso/mfa`、`/sso/register/send-code`、`/sso/register` 在页内完成认证。旧 OIDC 跳转、回调和绑定入口已移除；新配置无需 OAuth 客户端、秘密或回调 URI。一次性迁移保留旧行，明确的 false 和空值优先，完成后只读新设置。原身份的 provider、subject 和网关 issuer 保持不变，原账号及业务数据继续关联。
+
+`/api/v1/auth/sso/captcha` 读取配置应用的 CAPTCHA，支持 Casdoor Default 图片及 Cloudflare Turnstile。挑战在 Redis 保存五分钟，绑定配置、动作和账号，提交前原子消费；上游验证码与本站验证码分别验证。上线不修改 Casdoor 当前 CAPTCHA 策略。
+
+按 `deploy/README.md` 发布固定镜像，先更新网关再更新商城。切换前备份完整配置、SQLite 数据目录、上传目录和 Redis，并实际恢复到隔离目录及私有端口验证。回退须同时恢复旧镜像和更新前数据。
+
+## 首次 OIDC 部署历史（以下配置和验收流程已过时）
+
 日期:2026-10-01。对应代码:分支 `kano/generic-oidc-login`(dujiao 侧通用 OIDC 登录)。
 背景与方案对比见 [ANALYSIS-2026-10-01-dujiao-sub2api-account-interop.md](ANALYSIS-2026-10-01-dujiao-sub2api-account-interop.md)。
 
