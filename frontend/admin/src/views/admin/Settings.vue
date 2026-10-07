@@ -83,7 +83,7 @@ const tabs = computed(() => [
   { label: t('admin.settings.tabs.captcha'), value: 'captcha' },
   { label: t('admin.settings.tabs.telegram'), value: 'telegram' },
   { label: t('admin.settings.tabs.google'), value: 'google' },
-  { label: t('admin.settings.tabs.oidc'), value: 'oidc' },
+  { label: t('admin.settings.tabs.sso'), value: 'sso' },
   { label: t('admin.settings.tabs.dashboard'), value: 'dashboard' },
   { label: t('admin.settings.tabs.upstreamSync'), value: 'upstream_sync' },
 ])
@@ -290,21 +290,17 @@ const googleForm = reactive({
   client_id: '',
 })
 
-const oidcForm = reactive({
+const ssoForm = reactive({
   enabled: false,
   only_enabled: false,
   issuer: '',
-  client_id: '',
-  client_secret: '',
-  has_client_secret: false,
-  redirect_uri: '',
   display_name: '',
   application_id: '',
   organization: '',
   admin_url: '',
 })
 const identityPolicyReady = ref(false)
-const localRegistrationVisible = computed(() => identityPolicyReady.value && !oidcForm.only_enabled)
+const localRegistrationVisible = computed(() => identityPolicyReady.value && !ssoForm.only_enabled)
 
 const createOrderEmailLocalizedTemplate = () => ({ subject: '', body: '' })
 const createOrderEmailSceneTemplate = () => ({
@@ -390,14 +386,14 @@ const fetchSettings = async () => {
   loading.value = true
   identityPolicyReady.value = false
   try {
-    const [siteRes, orderRes, smtpRes, captchaRes, telegramRes, googleRes, oidcRes, dashboardRes, registrationRes, orderEmailTmplRes] = await Promise.all([
+    const [siteRes, orderRes, smtpRes, captchaRes, telegramRes, googleRes, ssoRes, dashboardRes, registrationRes, orderEmailTmplRes] = await Promise.all([
       adminAPI.getSettings({ key: 'site_config' }),
       adminAPI.getSettings({ key: 'order_config' }),
       adminAPI.getSMTPSettings(),
       adminAPI.getCaptchaSettings(),
       adminAPI.getTelegramAuthSettings(),
       adminAPI.getGoogleAuthSettings(),
-      adminAPI.getOIDCAuthSettings(),
+      adminAPI.getSSOAuthSettings(),
       adminAPI.getSettings({ key: 'dashboard_config' }),
       adminAPI.getSettings({ key: 'registration_config' }),
       adminAPI.getOrderEmailTemplateSettings(),
@@ -558,20 +554,16 @@ const fetchSettings = async () => {
       googleForm.client_id = String(google.client_id || '')
     }
 
-    if (oidcRes.data && oidcRes.data.data) {
-      const oidc = oidcRes.data.data as Record<string, unknown>
-      oidcForm.enabled = !!oidc.enabled
-      oidcForm.only_enabled = !!oidc.only_enabled
-      oidcForm.issuer = String(oidc.issuer || '')
-      oidcForm.client_id = String(oidc.client_id || '')
-      oidcForm.client_secret = ''
-      oidcForm.has_client_secret = !!oidc.has_client_secret
-      oidcForm.redirect_uri = String(oidc.redirect_uri || '')
-      oidcForm.display_name = String(oidc.display_name || '')
-      oidcForm.application_id = String(oidc.application_id || '')
-      oidcForm.organization = String(oidc.organization || '')
-      oidcForm.admin_url = safeAdminURL(oidc.admin_url)
-      identityPolicyReady.value = typeof oidc.only_enabled === 'boolean'
+    if (ssoRes.data && ssoRes.data.data) {
+      const sso = ssoRes.data.data as Record<string, unknown>
+      ssoForm.enabled = !!sso.enabled
+      ssoForm.only_enabled = !!sso.only_enabled
+      ssoForm.issuer = String(sso.issuer || '')
+      ssoForm.display_name = String(sso.display_name || '')
+      ssoForm.application_id = String(sso.application_id || '')
+      ssoForm.organization = String(sso.organization || '')
+      ssoForm.admin_url = safeAdminURL(sso.admin_url)
+      identityPolicyReady.value = typeof sso.only_enabled === 'boolean'
     }
 
     if (dashboardRes.data && dashboardRes.data.data) {
@@ -764,33 +756,24 @@ const saveGoogleAuthSettings = async () => {
   googleForm.client_id = String(data?.client_id || '')
 }
 
-const saveOIDCAuthSettings = async () => {
+const saveSSOAuthSettings = async () => {
   const payload: Record<string, unknown> = {
-    enabled: oidcForm.enabled,
-    only_enabled: oidcForm.only_enabled,
-    issuer: oidcForm.issuer.trim(),
-    client_id: oidcForm.client_id.trim(),
-    redirect_uri: oidcForm.redirect_uri.trim(),
-    display_name: oidcForm.display_name.trim(),
-    application_id: oidcForm.application_id.trim(),
-    organization: oidcForm.organization.trim(),
+    enabled: ssoForm.enabled,
+    only_enabled: ssoForm.only_enabled,
+    issuer: ssoForm.issuer.trim(),
+    display_name: ssoForm.display_name.trim(),
+    application_id: ssoForm.application_id.trim(),
+    organization: ssoForm.organization.trim(),
   }
-  if (oidcForm.client_secret.trim() !== '') {
-    payload.client_secret = oidcForm.client_secret.trim()
-  }
-  const res = await adminAPI.updateOIDCAuthSettings(payload)
+  const res = await adminAPI.updateSSOAuthSettings(payload)
   const data = res.data?.data as Record<string, unknown> | undefined
-  oidcForm.enabled = !!data?.enabled
-  oidcForm.only_enabled = !!data?.only_enabled
-  oidcForm.issuer = String(data?.issuer || '')
-  oidcForm.client_id = String(data?.client_id || '')
-  oidcForm.client_secret = ''
-  oidcForm.has_client_secret = !!data?.has_client_secret
-  oidcForm.redirect_uri = String(data?.redirect_uri || '')
-  oidcForm.display_name = String(data?.display_name || '')
-  oidcForm.application_id = String(data?.application_id || '')
-  oidcForm.organization = String(data?.organization || '')
-  oidcForm.admin_url = safeAdminURL(data?.admin_url)
+  ssoForm.enabled = !!data?.enabled
+  ssoForm.only_enabled = !!data?.only_enabled
+  ssoForm.issuer = String(data?.issuer || '')
+  ssoForm.display_name = String(data?.display_name || '')
+  ssoForm.application_id = String(data?.application_id || '')
+  ssoForm.organization = String(data?.organization || '')
+  ssoForm.admin_url = safeAdminURL(data?.admin_url)
   identityPolicyReady.value = typeof data?.only_enabled === 'boolean'
 }
 
@@ -857,8 +840,8 @@ const saveSettings = async () => {
       await saveTelegramAuthSettings()
     } else if (currentTab.value === 'google') {
       await saveGoogleAuthSettings()
-    } else if (currentTab.value === 'oidc') {
-      await saveOIDCAuthSettings()
+    } else if (currentTab.value === 'sso') {
+      await saveSSOAuthSettings()
     } else if (currentTab.value === 'dashboard') {
       await saveDashboardSettings()
     } else {
@@ -918,7 +901,7 @@ onMounted(() => {
         </div>
         <div v-if="!localRegistrationVisible" class="space-y-3 p-6 text-sm">
           <p class="text-muted-foreground">{{ t('admin.settings.registration.passportHint') }}</p>
-          <a v-if="identityPolicyReady && oidcForm.admin_url" :href="oidcForm.admin_url" target="_blank" rel="noopener noreferrer" class="text-primary underline">{{ t('admin.settings.registration.passportAdmin') }}</a>
+          <a v-if="identityPolicyReady && ssoForm.admin_url" :href="ssoForm.admin_url" target="_blank" rel="noopener noreferrer" class="text-primary underline">{{ t('admin.settings.registration.passportAdmin') }}</a>
           <p v-else class="text-muted-foreground">{{ t('admin.settings.registration.passportUnavailable') }}</p>
         </div>
         <div v-else class="space-y-4 p-6">
@@ -1586,70 +1569,52 @@ onMounted(() => {
         </div>
       </TabsContent>
 
-      <TabsContent value="oidc" :forceMount="true" v-show="currentTab === 'oidc'" class="space-y-6 mt-0">
+      <TabsContent value="sso" :forceMount="true" v-show="currentTab === 'sso'" class="space-y-6 mt-0">
         <div class="rounded-xl border border-border bg-card">
           <div class="border-b border-border bg-muted/40 px-6 py-4">
-            <h2 class="text-lg font-semibold">{{ t('admin.settings.oidc.title') }}</h2>
-            <p class="mt-1 text-xs text-muted-foreground">{{ t('admin.settings.oidc.subtitle') }}</p>
+            <h2 class="text-lg font-semibold">{{ t('admin.settings.sso.title') }}</h2>
+            <p class="mt-1 text-xs text-muted-foreground">{{ t('admin.settings.sso.subtitle') }}</p>
           </div>
 
           <div class="space-y-6 p-6">
             <div class="flex flex-col gap-3 rounded-lg border border-border bg-muted/20 px-4 py-3 sm:flex-row sm:items-center">
-              <Switch id="oidc-auth-enabled" v-model="oidcForm.enabled" />
-              <Label for="oidc-auth-enabled" class="text-sm font-medium">{{ t('admin.settings.oidc.enabled') }}</Label>
+              <Switch id="sso-auth-enabled" v-model="ssoForm.enabled" />
+              <Label for="sso-auth-enabled" class="text-sm font-medium">{{ t('admin.settings.sso.enabled') }}</Label>
             </div>
             <div class="space-y-2">
               <div class="flex items-center gap-3">
-                <Switch id="oidc-only-enabled" v-model="oidcForm.only_enabled" />
-                <Label for="oidc-only-enabled" class="text-sm font-medium">{{ t('admin.settings.oidc.onlyEnabled') }}</Label>
+                <Switch id="sso-only-enabled" v-model="ssoForm.only_enabled" />
+                <Label for="sso-only-enabled" class="text-sm font-medium">{{ t('admin.settings.sso.onlyEnabled') }}</Label>
               </div>
-              <p class="text-xs text-muted-foreground">{{ t('admin.settings.oidc.onlyEnabledHint') }}</p>
+              <p class="text-xs text-muted-foreground">{{ t('admin.settings.sso.onlyEnabledHint') }}</p>
             </div>
 
             <div class="space-y-2">
-              <label class="text-xs font-medium text-muted-foreground">{{ t('admin.settings.oidc.issuer') }}</label>
-              <Input v-model="oidcForm.issuer" :placeholder="t('admin.settings.oidc.issuerPlaceholder')" />
-              <p class="text-xs text-muted-foreground">{{ t('admin.settings.oidc.issuerHint') }}</p>
+              <label class="text-xs font-medium text-muted-foreground">{{ t('admin.settings.sso.issuer') }}</label>
+              <Input v-model="ssoForm.issuer" :placeholder="t('admin.settings.sso.issuerPlaceholder')" />
+              <p class="text-xs text-muted-foreground">{{ t('admin.settings.sso.issuerHint') }}</p>
+            </div>
+
+            <div class="space-y-2">
+              <label class="text-xs font-medium text-muted-foreground">{{ t('admin.settings.sso.displayName') }}</label>
+              <Input v-model="ssoForm.display_name" :placeholder="t('admin.settings.sso.displayNamePlaceholder')" />
             </div>
 
             <div class="grid gap-4 sm:grid-cols-2">
               <div class="space-y-2">
-                <label class="text-xs font-medium text-muted-foreground">{{ t('admin.settings.oidc.clientID') }}</label>
-                <Input v-model="oidcForm.client_id" :placeholder="t('admin.settings.oidc.clientIDPlaceholder')" />
+                <label class="text-xs font-medium text-muted-foreground">{{ t('admin.settings.sso.applicationID') }}</label>
+                <Input v-model="ssoForm.application_id" placeholder="admin/dujiao-store" />
+                <p class="text-xs text-muted-foreground">{{ t('admin.settings.sso.applicationIDHint') }}</p>
               </div>
               <div class="space-y-2">
-                <label class="text-xs font-medium text-muted-foreground">{{ t('admin.settings.oidc.clientSecret') }}</label>
-                <Input v-model="oidcForm.client_secret" type="password" :placeholder="t('admin.settings.oidc.clientSecretPlaceholder')" />
-                <p v-if="oidcForm.has_client_secret" class="text-xs text-muted-foreground">{{ t('admin.settings.oidc.clientSecretSet') }}</p>
-              </div>
-            </div>
-
-            <div class="space-y-2">
-              <label class="text-xs font-medium text-muted-foreground">{{ t('admin.settings.oidc.redirectURI') }}</label>
-              <Input v-model="oidcForm.redirect_uri" :placeholder="t('admin.settings.oidc.redirectURIPlaceholder')" />
-              <p class="text-xs text-muted-foreground">{{ t('admin.settings.oidc.redirectURIHint') }}</p>
-            </div>
-
-            <div class="space-y-2">
-              <label class="text-xs font-medium text-muted-foreground">{{ t('admin.settings.oidc.displayName') }}</label>
-              <Input v-model="oidcForm.display_name" :placeholder="t('admin.settings.oidc.displayNamePlaceholder')" />
-            </div>
-
-            <div class="grid gap-4 sm:grid-cols-2">
-              <div class="space-y-2">
-                <label class="text-xs font-medium text-muted-foreground">{{ t('admin.settings.oidc.applicationID') }}</label>
-                <Input v-model="oidcForm.application_id" placeholder="admin/dujiao-store" />
-                <p class="text-xs text-muted-foreground">{{ t('admin.settings.oidc.applicationIDHint') }}</p>
-              </div>
-              <div class="space-y-2">
-                <label class="text-xs font-medium text-muted-foreground">{{ t('admin.settings.oidc.organization') }}</label>
-                <Input v-model="oidcForm.organization" placeholder="kano" />
-                <p class="text-xs text-muted-foreground">{{ t('admin.settings.oidc.organizationHint') }}</p>
+                <label class="text-xs font-medium text-muted-foreground">{{ t('admin.settings.sso.organization') }}</label>
+                <Input v-model="ssoForm.organization" placeholder="kano" />
+                <p class="text-xs text-muted-foreground">{{ t('admin.settings.sso.organizationHint') }}</p>
               </div>
             </div>
 
             <div class="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-xs leading-5 text-blue-800 dark:border-blue-900/60 dark:bg-blue-950/30 dark:text-blue-200">
-              <p>{{ t('admin.settings.oidc.emailHint') }}</p>
+              <p>{{ t('admin.settings.sso.emailHint') }}</p>
             </div>
           </div>
         </div>

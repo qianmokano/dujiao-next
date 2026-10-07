@@ -28,12 +28,9 @@ func UnifiedAuthMiddleware(onlyEnabled func() bool) gin.HandlerFunc {
 func unifiedAuthRouteAllowed(method, path string) bool {
 	if index := strings.Index(path, "/auth/"); index >= 0 {
 		endpoint := path[index+len("/auth/"):]
-		if method == http.MethodGet {
-			return endpoint == "oidc/start"
-		}
 		if method == http.MethodPost {
 			switch endpoint {
-			case "oidc/callback", "oidc/password-login", "oidc/mfa", "oidc/register/send-code", "oidc/register", "login/verify-2fa":
+			case "sso/captcha", "sso/password-login", "sso/mfa", "sso/register/send-code", "sso/register", "login/verify-2fa":
 				return true
 			}
 		}
@@ -43,7 +40,7 @@ func unifiedAuthRouteAllowed(method, path string) bool {
 		endpoint := path[index+len("/me/"):]
 		for _, prefix := range []string{"password", "email/", "2fa/", "google", "telegram", "oidc"} {
 			if strings.HasPrefix(endpoint, prefix) {
-				return method == http.MethodGet && (endpoint == "2fa/status" || endpoint == "google" || endpoint == "telegram" || endpoint == "oidc")
+				return method == http.MethodGet && (endpoint == "2fa/status" || endpoint == "google" || endpoint == "telegram")
 			}
 		}
 	}

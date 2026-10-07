@@ -141,8 +141,8 @@ const appStore = useAppStore()
 const telegramMiniAppStore = useTelegramMiniAppStore()
 const userProfileStore = useUserProfileStore()
 const userAuthStore = useUserAuthStore()
-const unifiedAuthOnly = computed(() => !appStore.identityPolicyReady || appStore.config?.oidc_auth?.only_enabled !== false)
-const accountURL = computed(() => safeIdentityURL(appStore.config?.oidc_auth?.account_url))
+const unifiedAuthOnly = computed(() => !appStore.identityPolicyReady || appStore.config?.sso_auth?.only_enabled !== false)
+const accountURL = computed(() => safeIdentityURL(appStore.config?.sso_auth?.account_url))
 
 const securityForm = reactive({
   newEmail: '',

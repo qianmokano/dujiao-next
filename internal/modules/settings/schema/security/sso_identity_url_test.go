@@ -2,7 +2,7 @@ package settingssecurity
 
 import "testing"
 
-func TestOIDCIdentityPageURLAndReadOnlyAdminLink(t *testing.T) {
+func TestSSOIdentityPageURLAndReadOnlyAdminLink(t *testing.T) {
 	for _, tc := range []struct{ issuer, want string }{
 		{"https://auth.example", "https://auth.example/login/built-in"},
 		{"https://auth.example/", "https://auth.example/login/built-in"},
@@ -11,11 +11,11 @@ func TestOIDCIdentityPageURLAndReadOnlyAdminLink(t *testing.T) {
 		{"https://auth.example/path", ""}, {"https://auth.example?redirect=evil", ""},
 		{"https://auth.example#evil", ""}, {"javascript:alert(1)", ""}, {"", ""},
 	} {
-		setting := OIDCAuthSetting{Issuer: tc.issuer}
-		if got := MaskOIDCAuthSettingForAdmin(setting)["admin_url"]; got != tc.want {
+		setting := SSOAuthSetting{Issuer: tc.issuer}
+		if got := MaskSSOAuthSettingForAdmin(setting)["admin_url"]; got != tc.want {
 			t.Fatalf("issuer=%q got=%v want=%s", tc.issuer, got, tc.want)
 		}
-		if _, persisted := EncodeOIDCAuthSetting(setting)["admin_url"]; persisted {
+		if _, persisted := EncodeSSOAuthSetting(setting)["admin_url"]; persisted {
 			t.Fatal("computed link was persisted")
 		}
 	}

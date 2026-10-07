@@ -27,7 +27,7 @@ import (
 	externalidentitycontract "github.com/dujiao-next/internal/modules/identity/externalidentity/contract"
 	googleauthapp "github.com/dujiao-next/internal/modules/identity/googleauth/application"
 	"github.com/dujiao-next/internal/modules/identity/jwttoken"
-	oidcauthapp "github.com/dujiao-next/internal/modules/identity/oidcauth/application"
+	ssoauthapp "github.com/dujiao-next/internal/modules/identity/ssoauth/application"
 	"github.com/dujiao-next/internal/modules/identity/userauth/challenge"
 	"github.com/dujiao-next/internal/shared/mailbrand"
 
@@ -47,7 +47,7 @@ type Service struct {
 	emailBrandResolver    mailbrand.Resolver
 	telegramAuthService   *telegramauthapp.Service
 	googleAuthService     *googleauthapp.Service
-	oidcAuthService       *oidcauthapp.Service
+	ssoAuthService        *ssoauthapp.Service
 	googleRedirectStore   GoogleRedirectStore
 	memberLevelSvc        MemberLevelAssigner
 	authUnitOfWork        AuthUnitOfWork
@@ -67,13 +67,13 @@ func (s *Service) SetGoogleAuthService(service *googleauthapp.Service) {
 	s.googleAuthService = service
 }
 
-// SetOIDCAuthService injects the runtime-configurable generic OIDC verifier.
-func (s *Service) SetOIDCAuthService(service *oidcauthapp.Service) {
-	s.oidcAuthService = service
+// SetSSOAuthService injects the runtime-configurable generic OIDC verifier.
+func (s *Service) SetSSOAuthService(service *ssoauthapp.Service) {
+	s.ssoAuthService = service
 }
 
 func (s *Service) requireLocalIdentityManagement() error {
-	if s.oidcAuthService.OnlyEnabled() {
+	if s.ssoAuthService.OnlyEnabled() {
 		return ErrUnifiedAuthRequired
 	}
 	return nil
@@ -479,7 +479,7 @@ func (s *Service) ParseUserChallengeToken(tokenString string) (*UserChallengeCla
 	if claims.Purpose != challenge.PurposeTwoFactor || claims.Typ != jwttoken.TypeTwoFactorChallenge {
 		return nil, errors.New("invalid challenge purpose")
 	}
-	if s.oidcAuthService.OnlyEnabled() && claims.LoginSource != constants.LoginLogSourceOIDC {
+	if s.ssoAuthService.OnlyEnabled() && claims.LoginSource != constants.LoginLogSourceOIDC {
 		return nil, ErrUnifiedAuthRequired
 	}
 	return claims, nil

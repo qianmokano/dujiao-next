@@ -3,7 +3,7 @@ package settingsbootstrap
 import (
 	"github.com/dujiao-next/internal/app/container"
 	"github.com/dujiao-next/internal/config"
-	oidcauthapp "github.com/dujiao-next/internal/modules/identity/oidcauth/application"
+	ssoauthapp "github.com/dujiao-next/internal/modules/identity/ssoauth/application"
 	settingsapp "github.com/dujiao-next/internal/modules/settings/application"
 	settingssecurity "github.com/dujiao-next/internal/modules/settings/schema/security"
 	settingstransport "github.com/dujiao-next/internal/modules/settings/transport/http"
@@ -33,29 +33,29 @@ func NewGoogleAuthHandler(c *container.Container, cfg *config.Config) *settingst
 	})
 }
 
-func NewOIDCAuthHandler(c *container.Container, cfg *config.Config) *settingstransport.OIDCAuthHandler {
-	return settingstransport.NewOIDCAuthHandler(settingsOIDCAuthAdapter{
-		settings: c.SettingService, cfg: cfg, oidcAuth: c.OIDCAuthService,
+func NewSSOAuthHandler(c *container.Container, cfg *config.Config) *settingstransport.SSOAuthHandler {
+	return settingstransport.NewSSOAuthHandler(settingsSSOAuthAdapter{
+		settings: c.SettingService, cfg: cfg, ssoAuth: c.SSOAuthService,
 	})
 }
 
-type settingsOIDCAuthAdapter struct {
+type settingsSSOAuthAdapter struct {
 	settings *settingsapp.Service
 	cfg      *config.Config
-	oidcAuth *oidcauthapp.Service
+	ssoAuth  *ssoauthapp.Service
 }
 
-func (a settingsOIDCAuthAdapter) GetOIDCAuthSetting() (settingssecurity.OIDCAuthSetting, error) {
-	return a.settings.GetOIDCAuthSetting(a.cfg.OIDCAuth)
+func (a settingsSSOAuthAdapter) GetSSOAuthSetting() (settingssecurity.SSOAuthSetting, error) {
+	return a.settings.GetSSOAuthSetting(a.cfg.SSOAuth)
 }
 
-func (a settingsOIDCAuthAdapter) PatchOIDCAuthSetting(patch settingssecurity.OIDCAuthSettingPatch) (settingssecurity.OIDCAuthSetting, error) {
-	return a.settings.PatchOIDCAuthSetting(a.cfg.OIDCAuth, patch)
+func (a settingsSSOAuthAdapter) PatchSSOAuthSetting(patch settingssecurity.SSOAuthSettingPatch) (settingssecurity.SSOAuthSetting, error) {
+	return a.settings.PatchSSOAuthSetting(a.cfg.SSOAuth, patch)
 }
 
-func (a settingsOIDCAuthAdapter) ApplyRuntime(setting settingssecurity.OIDCAuthSetting) {
-	a.cfg.OIDCAuth = settingssecurity.OIDCAuthSettingToConfig(setting)
-	if a.oidcAuth != nil {
-		a.oidcAuth.SetConfig(a.cfg.OIDCAuth)
+func (a settingsSSOAuthAdapter) ApplyRuntime(setting settingssecurity.SSOAuthSetting) {
+	a.cfg.SSOAuth = settingssecurity.SSOAuthSettingToConfig(setting)
+	if a.ssoAuth != nil {
+		a.ssoAuth.SetConfig(a.cfg.SSOAuth)
 	}
 }

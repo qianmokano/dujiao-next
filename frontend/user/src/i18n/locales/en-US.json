@@ -1025,7 +1025,10 @@
       "captchaRefreshing": "Refreshing...",
       "captchaCodePlaceholder": "Enter the image captcha",
       "showPassword": "Show password",
-      "hidePassword": "Hide password"
+      "hidePassword": "Hide password",
+      "passportCaptchaLabel": "Passport verification",
+      "refreshCaptcha": "Refresh verification image",
+      "captchaPlaceholder": "Enter image code"
     },
     "login": {
       "title": "User Login",
@@ -1077,9 +1080,6 @@
         "recoveryRequired": "Please enter a recovery code",
         "verifyFailed": "Verification failed, please check your input"
       },
-      "oidcButton": "SSO Login",
-      "oidcHint": "Continue with your SSO account",
-      "oidcLoginFailed": "Failed to start SSO login, please try again",
       "ssoMfa": {
         "title": "Two-Factor Verification",
         "subtitle": "Enter the two-factor code of your unified account",
@@ -1155,11 +1155,6 @@
         "sendCodeFailed": "Failed to send code",
         "resetFailed": "Reset failed, please check input"
       }
-    },
-    "oidcCallback": {
-      "processing": "Completing sign-in…",
-      "failed": "SSO sign-in failed, please try again",
-      "backToLogin": "Back to login"
     }
   },
   "order": {

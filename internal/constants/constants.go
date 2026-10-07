@@ -474,7 +474,7 @@ const (
 	SettingKeyCaptchaConfig            = "captcha_config"
 	SettingKeyTelegramAuthConfig       = "telegram_auth_config"
 	SettingKeyGoogleAuthConfig         = "google_auth_config"
-	SettingKeyOIDCAuthConfig           = "oidc_auth_config"
+	SettingKeySSOAuthConfig            = "sso_auth_config"
 	SettingKeyDashboardConfig          = "dashboard_config"
 	SettingKeyNotificationCenterConfig = "notification_center_config"
 	SettingKeyAffiliateConfig          = "affiliate_config"

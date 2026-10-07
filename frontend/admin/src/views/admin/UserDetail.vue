@@ -401,7 +401,7 @@ const identityEditable = ref(false)
 const loadIdentityPolicy = async () => {
   identityEditable.value = false
   try {
-    const res = await adminAPI.getOIDCAuthSettings()
+    const res = await adminAPI.getSSOAuthSettings()
     identityEditable.value = localIdentityEditable(res.data?.data)
   } catch {
     identityEditable.value = false

@@ -82,7 +82,7 @@ export const useAppStore = defineStore('app', () => {
             const requestTime = Date.now()
             const response = await configAPI.get()
             config.value = response.data.data
-            identityPolicyReady.value = typeof config.value?.oidc_auth?.only_enabled === 'boolean'
+            identityPolicyReady.value = typeof config.value?.sso_auth?.only_enabled === 'boolean'
             // 计算服务器与客户端的时间偏移量
             if (config.value?.server_time) {
                 const responseTime = Date.now()

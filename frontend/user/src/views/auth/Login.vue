@@ -213,7 +213,8 @@
             </template>
           </FormField>
 
-          <div v-if="loginCaptchaEnabled && !ssoOnlyMode">
+          <SSOCaptcha v-if="ssoOnlyMode" v-model="ssoCaptchaAnswer" :challenge="ssoCaptchaChallenge" @refresh="refreshSSOCaptcha" />
+          <div v-if="loginCaptchaEnabled">
             <label class="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
               <ShieldCheck class="h-3.5 w-3.5 opacity-60" />
               {{ t('auth.common.captchaLabel') }}
@@ -289,14 +290,6 @@
                   {{ attemptingMiniAppLogin ? t('auth.login.telegramMiniAppLoggingIn') : t('auth.login.telegramMiniAppHint') }}
                 </p>
               </div>
-              <div v-if="showOidcLogin" class="space-y-2">
-                <Button type="button" variant="secondary" class="h-11 w-full font-semibold" @click="startOidcLogin">
-                  {{ oidcDisplayName || t('auth.login.oidcButton') }}
-                </Button>
-                <p class="text-center text-xs text-muted-foreground">
-                  {{ t('auth.login.oidcHint') }}
-                </p>
-              </div>
               <div v-if="showGoogleLogin" class="space-y-2">
                 <GoogleIdentityButton
                   :client-id="googleClientID"
@@ -341,6 +334,7 @@
 <script setup lang="ts">
 import ImageCaptcha from '../../components/captcha/ImageCaptcha.vue'
 import TurnstileCaptcha from '../../components/captcha/TurnstileCaptcha.vue'
+import SSOCaptcha from '../../components/captcha/SSOCaptcha.vue'
 import FormField from '../../components/FormField.vue'
 import GoogleIdentityButton from '../../components/auth/GoogleIdentityButton.vue'
 import { useI18n } from 'vue-i18n'
@@ -366,7 +360,8 @@ const {
   showMiniAppLoginHint, attemptingMiniAppLogin, showTelegramMiniAppEntry, openTelegramMiniAppEntry,
   googleClientID, googleButtonLocale, googleIdentityUXMode, googleRedirectLoginURI,
   prepareGoogleRedirectLogin, showGoogleLogin, showThirdPartyLogin,
-  showOidcLogin, oidcDisplayName, startOidcLogin, ssoOnlyMode, passwordResetURL,
+  ssoOnlyMode, passwordResetURL,
+  ssoCaptchaChallenge, ssoCaptchaAnswer, refreshSSOCaptcha,
   ssoMfaChallenge, ssoMfaType, ssoMfaCode, performSsoMfa, cancelSsoMfa,
   handleGoogleCredential, handleGoogleScriptError,
   handleLogin,

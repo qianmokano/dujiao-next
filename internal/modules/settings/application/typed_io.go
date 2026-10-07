@@ -251,34 +251,38 @@ func (s *Service) PatchGoogleAuthSetting(defaultCfg config.GoogleAuthConfig, pat
 	return next, nil
 }
 
-// GetOIDCAuthSetting 获取通用 OIDC 登录配置。
-func (s *Service) GetOIDCAuthSetting(defaultCfg config.OIDCAuthConfig) (settingssecurity.OIDCAuthSetting, error) {
-	fallback := settingssecurity.DefaultOIDCAuthSetting(defaultCfg)
+// GetSSOAuthSetting 获取通用 OIDC 登录配置。
+func (s *Service) GetSSOAuthSetting(defaultCfg config.SSOAuthConfig) (settingssecurity.SSOAuthSetting, error) {
+	fallback := settingssecurity.DefaultSSOAuthSetting(defaultCfg)
 	if s == nil {
 		return fallback, nil
 	}
-	value, err := s.GetByKey(constants.SettingKeyOIDCAuthConfig)
+	value, err := s.GetByKey(constants.SettingKeySSOAuthConfig)
 	if err != nil {
 		return fallback, err
 	}
 	if value == nil {
 		return fallback, nil
 	}
-	return settingssecurity.NormalizeOIDCAuthSetting(settingssecurity.DecodeOIDCAuthSetting(value, fallback)), nil
+	setting := settingssecurity.NormalizeSSOAuthSetting(settingssecurity.DecodeSSOAuthSetting(value, fallback))
+	if err := settingssecurity.ValidateSSOAuthSetting(setting); err != nil {
+		return settingssecurity.SSOAuthSetting{}, err
+	}
+	return setting, nil
 }
 
-// PatchOIDCAuthSetting 基于补丁更新通用 OIDC 登录配置。
-func (s *Service) PatchOIDCAuthSetting(defaultCfg config.OIDCAuthConfig, patch settingssecurity.OIDCAuthSettingPatch) (settingssecurity.OIDCAuthSetting, error) {
-	current, err := s.GetOIDCAuthSetting(defaultCfg)
+// PatchSSOAuthSetting 基于补丁更新通用 OIDC 登录配置。
+func (s *Service) PatchSSOAuthSetting(defaultCfg config.SSOAuthConfig, patch settingssecurity.SSOAuthSettingPatch) (settingssecurity.SSOAuthSetting, error) {
+	current, err := s.GetSSOAuthSetting(defaultCfg)
 	if err != nil {
-		return settingssecurity.OIDCAuthSetting{}, err
+		return settingssecurity.SSOAuthSetting{}, err
 	}
-	next := settingssecurity.NormalizeOIDCAuthSetting(settingssecurity.ApplyOIDCAuthSettingPatch(current, patch))
-	if err := settingssecurity.ValidateOIDCAuthSetting(next); err != nil {
-		return settingssecurity.OIDCAuthSetting{}, err
+	next := settingssecurity.NormalizeSSOAuthSetting(settingssecurity.ApplySSOAuthSettingPatch(current, patch))
+	if err := settingssecurity.ValidateSSOAuthSetting(next); err != nil {
+		return settingssecurity.SSOAuthSetting{}, err
 	}
-	if _, err := s.Update(constants.SettingKeyOIDCAuthConfig, map[string]interface{}(settingssecurity.EncodeOIDCAuthSetting(next))); err != nil {
-		return settingssecurity.OIDCAuthSetting{}, err
+	if _, err := s.Update(constants.SettingKeySSOAuthConfig, map[string]interface{}(settingssecurity.EncodeSSOAuthSetting(next))); err != nil {
+		return settingssecurity.SSOAuthSetting{}, err
 	}
 	return next, nil
 }

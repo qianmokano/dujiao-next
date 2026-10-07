@@ -51,7 +51,10 @@ const loadScript = async () => {
       script.defer = true
       script.dataset.turnstile = '1'
       script.onload = () => resolve()
-      script.onerror = () => reject(new Error('failed to load turnstile script'))
+      script.onerror = () => {
+        script.remove()
+        reject(new Error('failed to load turnstile script'))
+      }
       document.head.appendChild(script)
     })
   }

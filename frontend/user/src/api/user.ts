@@ -32,9 +32,5 @@ export const userProfileAPI = {
     googleRedirectBindExchange: () =>
         userApi.post(GOOGLE_REDIRECT_API_PATHS.bindExchange, {}, { credentials: 'include' }),
     unbindGoogle: () => userApi.delete('/me/google/unbind'),
-    getOIDCBinding: () => userApi.get('/me/oidc'),
-    oidcBindStart: () => userApi.get('/me/oidc/start'),
-    oidcBindCallback: (data: { code: string; state: string }) =>
-        userApi.post('/me/oidc/callback', data),
-    unbindOIDC: () => userApi.delete('/me/oidc/unbind'),
+
 }

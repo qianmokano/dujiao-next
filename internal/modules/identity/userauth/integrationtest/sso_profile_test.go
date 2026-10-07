@@ -12,7 +12,7 @@ import (
 	"github.com/dujiao-next/internal/config"
 	"github.com/dujiao-next/internal/constants"
 	externalidentitydomain "github.com/dujiao-next/internal/modules/identity/externalidentity/domain"
-	oidcauthapp "github.com/dujiao-next/internal/modules/identity/oidcauth/application"
+	ssoauthapp "github.com/dujiao-next/internal/modules/identity/ssoauth/application"
 	userdomain "github.com/dujiao-next/internal/modules/identity/user/domain"
 	userauthapp "github.com/dujiao-next/internal/modules/identity/userauth/application"
 	userauthstore "github.com/dujiao-next/internal/modules/identity/userauth/infrastructure/gormstore"
@@ -48,12 +48,12 @@ func oidcProfileFixture(t *testing.T, account map[string]interface{}) (*userauth
 		}
 	}))
 	t.Cleanup(server.Close)
-	svc.SetOIDCAuthService(oidcauthapp.NewService(config.OIDCAuthConfig{Enabled: true, OnlyEnabled: true, Issuer: server.URL, ClientID: "client", ClientSecret: "secret", RedirectURI: "https://store.example/callback", ApplicationID: "admin/store", Organization: "kano"}))
+	svc.SetSSOAuthService(ssoauthapp.NewService(config.SSOAuthConfig{Enabled: true, OnlyEnabled: true, Issuer: server.URL, ApplicationID: "admin/store", Organization: "kano"}))
 	return svc, db, user
 }
 
-func profileLogin(svc *userauthapp.Service) (*userauthapp.OIDCPasswordLoginResult, error) {
-	return svc.LoginWithOIDCPassword(userauthapp.OIDCPasswordLoginInput{Account: "buyer", Password: "password", Context: context.Background()})
+func profileLogin(svc *userauthapp.Service) (*userauthapp.SSOPasswordLoginResult, error) {
+	return svc.LoginWithSSOPassword(userauthapp.SSOPasswordLoginInput{Account: "buyer", Password: "password", Context: context.Background()})
 }
 
 func TestOIDCProfileSynchronizesOnRepeatedLogin(t *testing.T) {

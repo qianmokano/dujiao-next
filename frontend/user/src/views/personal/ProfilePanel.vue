@@ -74,8 +74,8 @@ const { t } = useI18n()
 const { success: notifySuccess } = useFeedback()
 const userProfileStore = useUserProfileStore()
 const appStore = useAppStore()
-const localIdentityEditable = computed(() => appStore.identityPolicyReady && appStore.config?.oidc_auth?.only_enabled === false)
-const accountURL = computed(() => safeIdentityURL(appStore.config?.oidc_auth?.account_url))
+const localIdentityEditable = computed(() => appStore.identityPolicyReady && appStore.config?.sso_auth?.only_enabled === false)
+const accountURL = computed(() => safeIdentityURL(appStore.config?.sso_auth?.account_url))
 
 const profileForm = reactive({
   nickname: '',

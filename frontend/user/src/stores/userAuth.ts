@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { userAuthAPI } from '../api'
+import type { SSOAuthProofs } from '../api/auth'
 
 export const useUserAuthStore = defineStore('user-auth', () => {
     const router = useRouter()
@@ -149,10 +150,10 @@ export const useUserAuthStore = defineStore('user-auth', () => {
         }
     }
 
-    const oidcPasswordLogin = async (payload: { email: string; password: string }) => {
+    const ssoPasswordLogin = async (payload: { email: string; password: string } & SSOAuthProofs) => {
         loading.value = true
         try {
-            const response = await userAuthAPI.oidcPasswordLogin(payload)
+            const response = await userAuthAPI.ssoPasswordLogin(payload)
             const data = response.data.data || {}
             if (!data.requires_mfa) {
                 // 与普通登录同构:持久化 token/用户,再交给 2FA 分支判断
@@ -164,30 +165,20 @@ export const useUserAuthStore = defineStore('user-auth', () => {
         }
     }
 
-    const oidcMfaLogin = async (payload: { challenge: string; mfa_type: string; passcode: string }) => {
+    const ssoMfaLogin = async (payload: { challenge: string; mfa_type: string; passcode: string }) => {
         loading.value = true
         try {
-            const response = await userAuthAPI.oidcMfa(payload)
+            const response = await userAuthAPI.ssoMfa(payload)
             return handleLoginResponse(response.data.data)
         } finally {
             loading.value = false
         }
     }
 
-    const oidcRegister = async (payload: { email: string; password: string; code: string; display_name?: string }) => {
+    const ssoRegister = async (payload: { email: string; password: string; code: string; display_name?: string } & SSOAuthProofs) => {
         loading.value = true
         try {
-            const response = await userAuthAPI.oidcRegister(payload)
-            return handleLoginResponse(response.data.data)
-        } finally {
-            loading.value = false
-        }
-    }
-
-    const oidcLogin = async (payload: { code: string; state: string }) => {
-        loading.value = true
-        try {
-            const response = await userAuthAPI.oidcCallback(payload)
+            const response = await userAuthAPI.ssoRegister(payload)
             return handleLoginResponse(response.data.data)
         } finally {
             loading.value = false
@@ -256,10 +247,9 @@ export const useUserAuthStore = defineStore('user-auth', () => {
         clearChallenge,
         telegramLogin,
         telegramOidcLogin,
-        oidcLogin,
-        oidcPasswordLogin,
-        oidcMfaLogin,
-        oidcRegister,
+        ssoPasswordLogin,
+        ssoMfaLogin,
+        ssoRegister,
         telegramMiniAppLogin,
         googleLogin,
         googleRedirectLogin,

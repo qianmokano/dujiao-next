@@ -18,9 +18,9 @@ func NewHandler(c *container.Container) *publicconfigtransport.Handler {
 	if c.GoogleAuthService != nil {
 		google = publicConfigGoogleAdapter{svc: c.GoogleAuthService}
 	}
-	var oidc publicconfigtransport.OIDCAuthPublic
-	if c.OIDCAuthService != nil {
-		oidc = publicConfigOIDCAdapter{svc: c.OIDCAuthService}
+	var oidc publicconfigtransport.SSOAuthPublic
+	if c.SSOAuthService != nil {
+		oidc = publicConfigSSOAdapter{svc: c.SSOAuthService}
 	}
 	var overlay publicconfigtransport.ResellerOverlay
 	if c.ResellerSiteConfigService != nil {
@@ -28,7 +28,7 @@ func NewHandler(c *container.Container) *publicconfigtransport.Handler {
 	}
 	fallback := publicconfigtransport.TelegramAuthFallback{}
 	googleFallback := publicconfigtransport.GoogleAuthFallback{}
-	oidcFallback := publicconfigtransport.OIDCAuthFallback{}
+	oidcFallback := publicconfigtransport.SSOAuthFallback{}
 	if c.Config != nil {
 		fallback = publicconfigtransport.TelegramAuthFallback{
 			Enabled:     c.Config.TelegramAuth.Enabled,
@@ -39,10 +39,10 @@ func NewHandler(c *container.Container) *publicconfigtransport.Handler {
 			Enabled:  c.Config.GoogleAuth.Enabled,
 			ClientID: c.Config.GoogleAuth.ClientID,
 		}
-		oidcFallback = publicconfigtransport.OIDCAuthFallback{
-			Enabled:     c.Config.OIDCAuth.Enabled,
-			OnlyEnabled: c.Config.OIDCAuth.OnlyEnabled,
-			DisplayName: c.Config.OIDCAuth.DisplayName,
+		oidcFallback = publicconfigtransport.SSOAuthFallback{
+			Enabled:     c.Config.SSOAuth.Enabled,
+			OnlyEnabled: c.Config.SSOAuth.OnlyEnabled,
+			DisplayName: c.Config.SSOAuth.DisplayName,
 		}
 	}
 	return publicconfigtransport.NewHandler(

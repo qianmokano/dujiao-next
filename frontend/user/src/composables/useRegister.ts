@@ -10,7 +10,9 @@ import type { CaptchaPayload } from '../api'
 import ImageCaptcha from '../components/captcha/ImageCaptcha.vue'
 import TurnstileCaptcha from '../components/captcha/TurnstileCaptcha.vue'
 import { useFormValidation, getPasswordStrength } from './useFormValidation'
-import { useOIDCCredentials } from '../utils/unifiedAuth'
+import { useSSOCredentials } from '../utils/unifiedAuth'
+import { useSSOCaptcha } from './useSSOCaptcha'
+import type { SSOCaptchaAction } from '../api/auth'
 
 /**
  * 用户注册页共享逻辑（classic + vault 双模板共用）。
@@ -38,6 +40,13 @@ export function useRegister() {
 
   const passwordStrength = computed(() => getPasswordStrength(password.value))
   const error = ref('')
+  const ssoCaptcha = useSSOCaptcha()
+  const ssoCaptchaChallenge = ssoCaptcha.challenge
+  const ssoCaptchaAnswer = ssoCaptcha.answer
+  let ssoCaptchaAction: SSOCaptchaAction = 'register-send-code'
+  const refreshSSOCaptcha = async () => {
+    try { await ssoCaptcha.refresh(ssoCaptchaAction, registrationEmail.value) } catch (err: any) { error.value = err?.message || t('auth.register.errors.registerFailed') }
+  }
   const sending = ref(false)
   const countdown = ref(0)
   const captchaPayload = ref<CaptchaPayload>({})
@@ -50,9 +59,9 @@ export function useRegister() {
   const captchaProvider = computed(() => String(captchaConfig.value?.provider || 'none'))
   const sendCodeCaptchaEnabled = computed(() => !!captchaConfig.value?.scenes?.register_send_code && captchaProvider.value !== 'none')
   const turnstileSiteKey = computed(() => String(captchaConfig.value?.turnstile?.site_key || ''))
-  const registrationEnabled = computed(() => appStore.config?.registration_enabled !== false)
-  const ssoOnlyMode = computed(() => useOIDCCredentials(appStore.config?.oidc_auth, undefined))
-  const emailVerificationEnabled = computed(() => appStore.config?.email_verification_enabled !== false)
+  const registrationEnabled = computed(() => ssoOnlyMode.value || appStore.config?.registration_enabled !== false)
+  const ssoOnlyMode = computed(() => useSSOCredentials(appStore.config?.sso_auth, undefined))
+  const emailVerificationEnabled = computed(() => ssoOnlyMode.value || appStore.config?.email_verification_enabled !== false)
   const emailDomainAllowlistEnabled = computed(() => appStore.config?.email_domain_allowlist_enabled === true)
   const allowedEmailDomains = computed(() => {
     const raw = appStore.config?.allowed_email_domains
@@ -182,7 +191,10 @@ export function useRegister() {
     sending.value = true
     try {
       if (ssoOnlyMode.value) {
-        await userAuthAPI.oidcRegisterSendCode({ email: currentEmail })
+        ssoCaptchaAction = 'register-send-code'
+        if (!await ssoCaptcha.ensure(ssoCaptchaAction, currentEmail)) return
+        await userAuthAPI.ssoRegisterSendCode({ email: currentEmail, captcha:ssoCaptcha.proof(), captcha_payload:getCaptchaPayload() })
+        ssoCaptcha.invalidate()
       } else {
         await userAuthStore.sendVerifyCode({
           email: currentEmail,
@@ -194,6 +206,7 @@ export function useRegister() {
       notifySuccess(t('auth.common.codeSent'))
     } catch (err: any) {
       error.value = err.message || t('auth.register.errors.sendCodeFailed')
+      if (ssoOnlyMode.value) await refreshSSOCaptcha()
       if (captchaProvider.value === 'image') {
         imageCaptchaRef.value?.refresh()
       }
@@ -217,11 +230,15 @@ export function useRegister() {
     }
     try {
       if (ssoOnlyMode.value) {
-        await userAuthStore.oidcRegister({
+        ssoCaptchaAction = 'register'
+        if (!await ssoCaptcha.ensure(ssoCaptchaAction, currentEmail)) return
+        await userAuthStore.ssoRegister({
           email: currentEmail,
           password: password.value,
           code: code.value,
+          captcha:ssoCaptcha.proof(),
         })
+        ssoCaptcha.invalidate()
       } else {
         await userAuthStore.register({
           email: currentEmail,
@@ -233,6 +250,7 @@ export function useRegister() {
       router.push('/me/orders')
     } catch (err: any) {
       error.value = err.message || t('auth.register.errors.registerFailed')
+      if (ssoOnlyMode.value) await refreshSSOCaptcha()
     }
   }
 
@@ -245,6 +263,7 @@ export function useRegister() {
 
   return {
     ssoOnlyMode,
+    ssoCaptchaChallenge, ssoCaptchaAnswer, refreshSSOCaptcha,
     userAuthStore,
     brandSiteName,
     email,

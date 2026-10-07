@@ -9,7 +9,7 @@ export function isUnifiedAuthOnly(config: UnifiedAuthConfig | null | undefined):
   return config?.only_enabled === true
 }
 
-export function useOIDCCredentials(config: UnifiedAuthConfig | null | undefined, localQuery: unknown): boolean {
+export function useSSOCredentials(config: UnifiedAuthConfig | null | undefined, localQuery: unknown): boolean {
   return isUnifiedAuthOnly(config) || (config?.enabled === true && localQuery !== '1')
 }
 

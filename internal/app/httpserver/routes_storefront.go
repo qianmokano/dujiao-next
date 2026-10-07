@@ -49,7 +49,7 @@ func registerStorefrontRoutes(
 	userTelegramOIDCHandler *userauthtransport.UserTelegramOIDCHandler,
 	userTelegramHandler *userauthtransport.UserTelegramHandler,
 	userGoogleHandler *userauthtransport.UserGoogleHandler,
-	userOIDCHandler *userauthtransport.UserOIDCHandler,
+	userSSOHandler *userauthtransport.UserSSOHandler,
 	userLoginHandler *userauthtransport.UserLoginHandler,
 	user2FAHandler *userauthtransport.User2FAHandler,
 	publicConfigHandler *publicconfigtransport.Handler,
@@ -102,7 +102,7 @@ func registerStorefrontRoutes(
 
 	// 用户认证接口
 	auth := storefront.Group("/auth")
-	auth.Use(middleware.UnifiedAuthMiddleware(c.OIDCAuthService.OnlyEnabled))
+	auth.Use(middleware.UnifiedAuthMiddleware(c.SSOAuthService.OnlyEnabled))
 	{
 		userauthtransport.RegisterUserVerifyAuthRoutes(auth, userVerifyHandler)
 		userauthtransport.RegisterUserRegisterAuthRoutes(auth, userLoginHandler)
@@ -111,9 +111,9 @@ func registerStorefrontRoutes(
 		userauthtransport.RegisterUserTelegramAuthRoutes(auth, userTelegramHandler, middleware.RateLimitMiddleware(redisClient, loginRule, middleware.KeyByIP))
 		userauthtransport.RegisterUserTelegramOIDCAuthRoutes(auth, userTelegramOIDCHandler, middleware.RateLimitMiddleware(redisClient, loginRule, middleware.KeyByIP))
 		userauthtransport.RegisterUserGoogleAuthRoutes(auth, userGoogleHandler, middleware.RateLimitMiddleware(redisClient, loginRule, middleware.KeyByIP))
-		userauthtransport.RegisterUserOIDCAuthRoutes(
+		userauthtransport.RegisterUserSSOAuthRoutes(
 			auth,
-			userOIDCHandler,
+			userSSOHandler,
 			middleware.RateLimitMiddleware(redisClient, loginRule, middleware.KeyByIP),
 			middleware.RateLimitMiddleware(redisClient, loginRule, middleware.KeyByIPAndJSONField("email")),
 		)
@@ -123,14 +123,13 @@ func registerStorefrontRoutes(
 	// 用户接口（需鉴权）
 	user := storefront.Group("")
 	user.Use(middleware.UserJWTAuthMiddleware(cfg.UserJWT.SecretKey, c.UserStore))
-	user.Use(middleware.UnifiedAuthMiddleware(c.OIDCAuthService.OnlyEnabled))
+	user.Use(middleware.UnifiedAuthMiddleware(c.SSOAuthService.OnlyEnabled))
 	{
 		userauthtransport.RegisterUserProfileRoutes(user, userProfileHandler)
 		auditlogtransport.RegisterUserRoutes(user, userAuditLogHandler)
 		userauthtransport.RegisterUserPasswordRoutes(user, userPasswordHandler)
 		userauthtransport.RegisterUserTelegramRoutes(user, userTelegramHandler)
 		userauthtransport.RegisterUserTelegramOIDCRoutes(user, userTelegramOIDCHandler)
-		userauthtransport.RegisterUserOIDCRoutes(user, userOIDCHandler)
 		userauthtransport.RegisterUserGoogleRoutes(
 			user,
 			userGoogleHandler,

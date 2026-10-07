@@ -23,17 +23,20 @@ type Config struct {
 	Bootstrap    BootstrapConfig    `mapstructure:"bootstrap"`
 	TelegramAuth TelegramAuthConfig `mapstructure:"telegram_auth"`
 	GoogleAuth   GoogleAuthConfig   `mapstructure:"google_auth"`
-	OIDCAuth     OIDCAuthConfig     `mapstructure:"oidc_auth"`
-	Redis        RedisConfig        `mapstructure:"redis"`
-	Queue        QueueConfig        `mapstructure:"queue"`
-	Upload       UploadConfig       `mapstructure:"upload"`
-	CORS         CORSConfig         `mapstructure:"cors"`
-	Security     SecurityConfig     `mapstructure:"security"`
-	Email        EmailConfig        `mapstructure:"email"`
-	Order        OrderConfig        `mapstructure:"order"`
-	Captcha      CaptchaConfig      `mapstructure:"captcha"`
-	Web          WebConfig          `mapstructure:"web"`
-	Reseller     ResellerConfig     `mapstructure:"reseller"`
+	SSOAuth      SSOAuthConfig      `mapstructure:"sso_auth"`
+	// Legacy fields are migration inputs only, never runtime authentication fallbacks.
+	SSOAuthConfigured bool           `mapstructure:"-" json:"-"`
+	LegacySSOAuth     *SSOAuthConfig `mapstructure:"-" json:"-"`
+	Redis             RedisConfig    `mapstructure:"redis"`
+	Queue             QueueConfig    `mapstructure:"queue"`
+	Upload            UploadConfig   `mapstructure:"upload"`
+	CORS              CORSConfig     `mapstructure:"cors"`
+	Security          SecurityConfig `mapstructure:"security"`
+	Email             EmailConfig    `mapstructure:"email"`
+	Order             OrderConfig    `mapstructure:"order"`
+	Captcha           CaptchaConfig  `mapstructure:"captcha"`
+	Web               WebConfig      `mapstructure:"web"`
+	Reseller          ResellerConfig `mapstructure:"reseller"`
 }
 
 // AppConfig 应用级配置
@@ -118,15 +121,12 @@ type GoogleAuthConfig struct {
 	ClientID string `mapstructure:"client_id"`
 }
 
-// OIDCAuthConfig 通用 OIDC 单点登录配置（对接 Casdoor 等标准 OIDC 提供方）。
-type OIDCAuthConfig struct {
-	Enabled      bool   `mapstructure:"enabled"`
-	OnlyEnabled  bool   `mapstructure:"only_enabled"`
-	Issuer       string `mapstructure:"issuer"`        // 形如 https://auth.example.com
-	ClientID     string `mapstructure:"client_id"`     // OIDC Client ID
-	ClientSecret string `mapstructure:"client_secret"` // OIDC Client Secret（敏感）
-	RedirectURI  string `mapstructure:"redirect_uri"`  // 形如 https://shop.example.com/auth/oidc/callback
-	DisplayName  string `mapstructure:"display_name"`  // 登录按钮展示名，空则用前端默认文案
+// SSOAuthConfig configures Casdoor session APIs without OAuth client credentials.
+type SSOAuthConfig struct {
+	Enabled     bool   `mapstructure:"enabled"`
+	OnlyEnabled bool   `mapstructure:"only_enabled"`
+	Issuer      string `mapstructure:"issuer"`       // 形如 https://auth.example.com
+	DisplayName string `mapstructure:"display_name"` // 登录按钮展示名，空则用前端默认文案
 	// 页内直连(免跳转)所需:Casdoor 应用标识与组织名
 	ApplicationID string `mapstructure:"application_id"` // owner/name,如 admin/dujiao-store
 	Organization  string `mapstructure:"organization"`   // 如 kano
@@ -463,6 +463,7 @@ func Load() *Config {
 		logger.Errorw("config_unmarshal_failed", "error", err)
 		panic(fmt.Errorf("配置解析失败: %w", err))
 	}
+	loadSSOAuthMigrationInputs(viper.GetViper(), &cfg)
 
 	return &cfg
 }

@@ -33,7 +33,7 @@ const fetchIdentityPolicy = async () => {
   identityEditable.value = false
   passportAdminURL.value = ''
   try {
-    const res = await adminAPI.getOIDCAuthSettings()
+    const res = await adminAPI.getSSOAuthSettings()
     const data = res.data?.data
     identityPolicyReady.value = typeof data?.only_enabled === 'boolean'
     identityEditable.value = localIdentityEditable(data)

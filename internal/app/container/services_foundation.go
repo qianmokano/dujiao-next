@@ -3,8 +3,9 @@ package container
 import (
 	"github.com/dujiao-next/internal/authz"
 	catalogproductbootstrap "github.com/dujiao-next/internal/bootstrap/catalogproduct"
+	databasemigrations "github.com/dujiao-next/internal/bootstrap/database/migrations"
 	mailbrandwiring "github.com/dujiao-next/internal/bootstrap/mailbrand"
-	oidcauthcache "github.com/dujiao-next/internal/bootstrap/oidcauthcache"
+	ssoauthcache "github.com/dujiao-next/internal/bootstrap/ssoauthcache"
 	telegramauthcache "github.com/dujiao-next/internal/bootstrap/telegramauthcache"
 	"github.com/dujiao-next/internal/cache"
 	"github.com/dujiao-next/internal/logger"
@@ -15,7 +16,7 @@ import (
 	adminauthapp "github.com/dujiao-next/internal/modules/identity/adminauth/application"
 	admintotpapp "github.com/dujiao-next/internal/modules/identity/adminauth/totp/application"
 	googleauthapp "github.com/dujiao-next/internal/modules/identity/googleauth/application"
-	oidcauthapp "github.com/dujiao-next/internal/modules/identity/oidcauth/application"
+	ssoauthapp "github.com/dujiao-next/internal/modules/identity/ssoauth/application"
 	telegramauthapp "github.com/dujiao-next/internal/modules/identity/telegramauth/application"
 	userauthapp "github.com/dujiao-next/internal/modules/identity/userauth/application"
 	userauthcachestore "github.com/dujiao-next/internal/modules/identity/userauth/infrastructure/cachestore"
@@ -86,15 +87,24 @@ func (c *Container) loadRuntimeSettings() {
 		c.Config.TelegramAuth = settingssecurity.TelegramAuthSettingToConfig(telegramAuthSetting)
 	}
 
-	oidcAuthSetting, err := c.SettingService.GetOIDCAuthSetting(c.Config.OIDCAuth)
+	migrationFallback := c.Config.SSOAuth
+	if !c.Config.SSOAuthConfigured && c.Config.LegacySSOAuth != nil {
+		migrationFallback = *c.Config.LegacySSOAuth
+	}
+	migrationErr := databasemigrations.EnsureSSOAuthSetting(gormdb.DB, migrationFallback)
+	c.Config.LegacySSOAuth = nil
+	ssoAuthSetting, err := c.SettingService.GetSSOAuthSetting(c.Config.SSOAuth)
+	if migrationErr != nil {
+		err = migrationErr
+	}
 	if err != nil {
 		// 同 Google：数据库是管理事实源，读取失败不得回退到已启用的 YAML 配置。
-		c.Config.OIDCAuth.Enabled = false
+		c.Config.SSOAuth.Enabled = false
 		// A failed policy read must not silently reopen customer credentials.
-		c.Config.OIDCAuth.OnlyEnabled = true
-		logger.Warnw("provider_load_oidc_auth_setting_failed", "error", err)
+		c.Config.SSOAuth.OnlyEnabled = true
+		logger.Warnw("provider_load_sso_auth_setting_failed", "error", err)
 	} else {
-		c.Config.OIDCAuth = settingssecurity.OIDCAuthSettingToConfig(oidcAuthSetting)
+		c.Config.SSOAuth = settingssecurity.SSOAuthSettingToConfig(ssoAuthSetting)
 	}
 
 	googleAuthSetting, err := c.SettingService.GetGoogleAuthSetting(c.Config.GoogleAuth)
@@ -122,10 +132,10 @@ func (c *Container) initIdentityAndCatalogServices() {
 	c.UserTOTPService = usertotpapp.NewService(c.Config, c.UserStore, cache.Client())
 	c.TelegramAuthService = telegramauthapp.NewService(c.Config.TelegramAuth, telegramauthcache.Options()...)
 	c.GoogleAuthService = googleauthapp.NewService(c.Config.GoogleAuth)
-	c.OIDCAuthService = oidcauthapp.NewService(c.Config.OIDCAuth, oidcauthcache.Options()...)
+	c.SSOAuthService = ssoauthapp.NewService(c.Config.SSOAuth, ssoauthcache.Options()...)
 	c.UserAuthService = userauthapp.NewService(c.Config, c.UserStore, c.ExternalIdentityStore, c.EmailVerificationStore, c.SettingService, c.EmailSender, c.TelegramAuthService)
 	c.UserAuthService.SetGoogleAuthService(c.GoogleAuthService)
-	c.UserAuthService.SetOIDCAuthService(c.OIDCAuthService)
+	c.UserAuthService.SetSSOAuthService(c.SSOAuthService)
 	c.UserAuthService.SetGoogleRedirectStore(userauthcachestore.NewGoogleRedirectStore())
 	c.UserAuthService.SetAuthUnitOfWork(userauthgormstore.New(gormdb.DB))
 	c.UserAuthService.SetEmailBrandResolver(c.EmailBrandResolver)

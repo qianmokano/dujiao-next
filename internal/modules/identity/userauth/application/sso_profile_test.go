@@ -1,7 +1,7 @@
 package application
 
 import (
-	oidcauthapp "github.com/dujiao-next/internal/modules/identity/oidcauth/application"
+	ssoauthapp "github.com/dujiao-next/internal/modules/identity/ssoauth/application"
 	"testing"
 )
 
@@ -12,7 +12,7 @@ func TestOIDCProfileNameAndAvatarRules(t *testing.T) {
 		{"", "", "original@example.com", "original"},
 		{"", "", "original", "original"},
 	} {
-		if got := resolveOIDCDisplayName(&oidcauthapp.IdentityVerified{DisplayName: tc.display, Username: tc.username}, tc.email); got != tc.want {
+		if got := resolveSSODisplayName(&ssoauthapp.IdentityVerified{DisplayName: tc.display, Username: tc.username}, tc.email); got != tc.want {
 			t.Fatalf("name=%q want=%q", got, tc.want)
 		}
 	}
@@ -27,7 +27,7 @@ func TestOIDCProfileNameAndAvatarRules(t *testing.T) {
 		{"javascript:alert(1)", true, false, ""}, {"https://user:secret@auth.example/avatar", true, false, ""},
 		{"/avatar.png", true, false, ""}, {":invalid", true, false, ""},
 	} {
-		got, present := oidcAvatar(&oidcauthapp.IdentityVerified{AvatarURL: tc.value, AvatarPresent: tc.present})
+		got, present := ssoAvatar(&ssoauthapp.IdentityVerified{AvatarURL: tc.value, AvatarPresent: tc.present})
 		if got != tc.want || present != tc.wantPresent {
 			t.Fatalf("avatar=%q present=%v for %+v", got, present, tc)
 		}

@@ -24,7 +24,8 @@ import {
 import ImageCaptcha from '../components/captcha/ImageCaptcha.vue'
 import TurnstileCaptcha from '../components/captcha/TurnstileCaptcha.vue'
 import { useFormValidation } from './useFormValidation'
-import { isUnifiedAuthOnly, safeIdentityURL, useOIDCCredentials } from '../utils/unifiedAuth'
+import { useSSOCaptcha } from './useSSOCaptcha'
+import { isUnifiedAuthOnly, safeIdentityURL, useSSOCredentials } from '../utils/unifiedAuth'
 
 /**
  * 用户登录页共享逻辑（classic + vault 双模板共用）。
@@ -69,6 +70,12 @@ export function useLogin() {
   formValidation.addRule('email', formValidation.emailRule())
   formValidation.addRule('password', formValidation.requiredRule())
   const error = ref('')
+  const ssoCaptcha = useSSOCaptcha()
+  const ssoCaptchaChallenge = ssoCaptcha.challenge
+  const ssoCaptchaAnswer = ssoCaptcha.answer
+  const refreshSSOCaptcha = async () => {
+    try { await ssoCaptcha.refresh('login', email.value) } catch (err: any) { error.value = err?.message || t('auth.login.error') }
+  }
   const info = ref('')
   const captchaPayload = ref<CaptchaPayload>({})
   const turnstileToken = ref('')
@@ -86,11 +93,9 @@ export function useLogin() {
   const telegramEnabled = computed(() => !unifiedAuthOnly.value && !!telegramConfig.value?.enabled && telegramBotUsername.value !== '')
   const telegramLoginMode = computed(() => String(telegramConfig.value?.mode || '').trim())
   const isWidgetMode = computed(() => telegramLoginMode.value === 'widget' || (telegramLoginMode.value === '' && telegramEnabled.value))
-  const oidcConfig = computed(() => appStore.config?.oidc_auth || null)
-  const oidcEnabled = computed(() => !!oidcConfig.value?.enabled)
-  const unifiedAuthOnly = computed(() => isUnifiedAuthOnly(oidcConfig.value))
-  const passwordResetURL = computed(() => safeIdentityURL(oidcConfig.value?.password_reset_url))
-  const oidcDisplayName = computed(() => String(oidcConfig.value?.display_name || '').trim())
+  const ssoConfig = computed(() => appStore.config?.sso_auth || null)
+  const unifiedAuthOnly = computed(() => isUnifiedAuthOnly(ssoConfig.value))
+  const passwordResetURL = computed(() => safeIdentityURL(ssoConfig.value?.password_reset_url))
   const googleConfig = computed(() => appStore.config?.google_auth || null)
   const googleClientID = computed(() => String(googleConfig.value?.client_id || '').trim())
   const googleEnabled = computed(() => !unifiedAuthOnly.value && !!googleConfig.value?.enabled && googleClientID.value !== '')
@@ -100,7 +105,7 @@ export function useLogin() {
     ? tryBuildGoogleRedirectCredentialCallbackURL()
     : ''
   const googleRedirectAvailable = googleIdentityUXMode === 'popup' || googleRedirectLoginURI !== ''
-  const registrationEnabled = computed(() => appStore.config?.registration_enabled !== false)
+  const registrationEnabled = computed(() => ssoOnlyMode.value || appStore.config?.registration_enabled !== false)
   const emailVerificationEnabled = computed(() => appStore.config?.email_verification_enabled !== false)
   const isTelegramUrlEnv = isTelegramUrlEnvironment()
   const isTelegramMiniApp = computed(() => (telegramMiniAppStore.isMiniApp && telegramMiniAppStore.isReady) || isTelegramUrlEnv)
@@ -113,16 +118,14 @@ export function useLogin() {
     googleClientID.value,
     isTelegramMiniApp.value,
   ) && googleRedirectAvailable)
-  const showOidcLogin = computed(() => oidcEnabled.value)
   // Local display fallback applies only when unified authentication is optional.
   const isLocalEscape = computed(() => !unifiedAuthOnly.value && route.query.local === '1')
-  const ssoOnlyMode = computed(() => useOIDCCredentials(oidcConfig.value, route.query.local))
+  const ssoOnlyMode = computed(() => useSSOCredentials(ssoConfig.value, route.query.local))
   const showThirdPartyLogin = computed(() => hasThirdPartyLoginOption(
     showTelegramWidget.value,
     showTelegramOidc.value,
     showMiniAppLoginHint.value,
     showGoogleLogin.value,
-    showOidcLogin.value,
   ))
   const telegramMiniAppEntryLink = computed(() => buildTelegramMiniAppEntryLink(telegramBotUsername.value, telegramMiniAppURL.value))
   const showTelegramMiniAppEntry = computed(() => !unifiedAuthOnly.value && !isTelegramMiniApp.value && telegramMiniAppEntryLink.value !== '')
@@ -182,10 +185,14 @@ export function useLogin() {
 
     try {
       if (ssoOnlyMode.value) {
-        const data = await userAuthStore.oidcPasswordLogin({
+        if (!await ssoCaptcha.ensure('login', email.value)) return
+        const data = await userAuthStore.ssoPasswordLogin({
           email: email.value,
           password: password.value,
+          captcha: ssoCaptcha.proof(),
+          captcha_payload: getCaptchaPayload(),
         })
+        ssoCaptcha.invalidate()
         if (data?.requires_mfa && data?.mfa_challenge) {
           ssoMfaChallenge.value = data.mfa_challenge
           ssoMfaType.value = data.mfa_challenge.props?.[0]?.mfa_type || 'otp'
@@ -213,6 +220,7 @@ export function useLogin() {
       await redirectAfterLogin()
     } catch (err: any) {
       error.value = err.message || t('auth.login.error')
+      if (ssoOnlyMode.value) await refreshSSOCaptcha()
       if (captchaProvider.value === 'image') {
         imageCaptchaRef.value?.refresh()
       }
@@ -441,7 +449,7 @@ export function useLogin() {
       return
     }
     try {
-      await userAuthStore.oidcMfaLogin({
+      await userAuthStore.ssoMfaLogin({
         challenge: ssoMfaChallenge.value.token,
         mfa_type: ssoMfaType.value,
         passcode: ssoMfaCode.value.trim(),
@@ -457,28 +465,6 @@ export function useLogin() {
     ssoMfaChallenge.value = null
     ssoMfaCode.value = ''
     error.value = ''
-  }
-
-  const startOidcLogin = async () => {
-    error.value = ''
-    try {
-      sessionStorage.removeItem('oidc_intent')
-      const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : ''
-      if (redirect) {
-        sessionStorage.setItem('oidc_redirect', redirect)
-      } else {
-        sessionStorage.removeItem('oidc_redirect')
-      }
-      const res = await userAuthAPI.oidcStart()
-      const url = String(res?.data?.data?.auth_url || '')
-      if (!url) {
-        error.value = t('auth.login.oidcLoginFailed')
-        return
-      }
-      window.location.href = url
-    } catch (err: any) {
-      error.value = err?.message || t('auth.login.oidcLoginFailed')
-    }
   }
 
   const renderTelegramWidget = () => {
@@ -591,7 +577,8 @@ export function useLogin() {
     telegramWidgetRef,
     showTelegramOidc,
     startTelegramOidc,
-    showOidcLogin, oidcDisplayName, startOidcLogin, ssoOnlyMode, isLocalEscape, passwordResetURL,
+    ssoOnlyMode, isLocalEscape, passwordResetURL,
+    ssoCaptchaChallenge, ssoCaptchaAnswer, refreshSSOCaptcha,
     ssoMfaChallenge, ssoMfaType, ssoMfaCode, performSsoMfa, cancelSsoMfa,
     showMiniAppLoginHint,
     attemptingMiniAppLogin,

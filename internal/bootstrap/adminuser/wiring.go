@@ -17,7 +17,7 @@ func NewHandler(c *container.Container) *adminusertransport.AdminHandler {
 		adminUserProductAdapter{products: c.ProductRepo},
 		adminUserAuthStateAdapter{},
 		func() (bool, error) {
-			setting, err := c.SettingService.GetOIDCAuthSetting(c.Config.OIDCAuth)
+			setting, err := c.SettingService.GetSSOAuthSetting(c.Config.SSOAuth)
 			return setting.OnlyEnabled, err
 		},
 	)

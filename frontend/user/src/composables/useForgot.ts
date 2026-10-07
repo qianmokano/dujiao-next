@@ -27,8 +27,8 @@ export function useForgot() {
   })
 
   const emailVerificationEnabled = computed(() => appStore.config?.email_verification_enabled !== false)
-  const unifiedAuthOnly = computed(() => isUnifiedAuthOnly(appStore.config?.oidc_auth))
-  const passwordResetURL = computed(() => safeIdentityURL(appStore.config?.oidc_auth?.password_reset_url))
+  const unifiedAuthOnly = computed(() => isUnifiedAuthOnly(appStore.config?.sso_auth))
+  const passwordResetURL = computed(() => safeIdentityURL(appStore.config?.sso_auth?.password_reset_url))
 
   const email = ref('')
   const code = ref('')

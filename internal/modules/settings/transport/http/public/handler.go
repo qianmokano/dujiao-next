@@ -72,13 +72,13 @@ type GoogleAuthFallback struct {
 	ClientID string
 }
 
-// OIDCAuthPublic 通用 OIDC 登录公开配置端口。
-type OIDCAuthPublic interface {
+// SSOAuthPublic 通用 OIDC 登录公开配置端口。
+type SSOAuthPublic interface {
 	PublicConfig() map[string]interface{}
 }
 
-// OIDCAuthFallback 无 OIDCAuthService 时的配置回退。
-type OIDCAuthFallback struct {
+// SSOAuthFallback 无 SSOAuthService 时的配置回退。
+type SSOAuthFallback struct {
 	Enabled     bool
 	OnlyEnabled bool
 	DisplayName string
@@ -99,8 +99,8 @@ type Handler struct {
 	fallback       TelegramAuthFallback
 	google         GoogleAuthPublic
 	googleFallback GoogleAuthFallback
-	oidc           OIDCAuthPublic
-	oidcFallback   OIDCAuthFallback
+	oidc           SSOAuthPublic
+	oidcFallback   SSOAuthFallback
 	overlay        ResellerOverlay
 }
 
@@ -113,8 +113,8 @@ func NewHandler(
 	fallback TelegramAuthFallback,
 	google GoogleAuthPublic,
 	googleFallback GoogleAuthFallback,
-	oidc OIDCAuthPublic,
-	oidcFallback OIDCAuthFallback,
+	oidc SSOAuthPublic,
+	oidcFallback SSOAuthFallback,
 	overlay ResellerOverlay,
 ) *Handler {
 	if cache == nil {
@@ -210,15 +210,15 @@ func (h *Handler) GetConfig(c *gin.Context) {
 
 	data["google_auth"] = resolveGoogleAuthPublicConfig(h.google, h.googleFallback)
 
-	oidcAuthConfig := map[string]interface{}{
+	ssoAuthConfig := map[string]interface{}{
 		"only_enabled": h.oidcFallback.OnlyEnabled,
 		"enabled":      false,
 		"display_name": strings.TrimSpace(h.oidcFallback.DisplayName),
 	}
 	if h.oidc != nil {
-		oidcAuthConfig = h.oidc.PublicConfig()
+		ssoAuthConfig = h.oidc.PublicConfig()
 	}
-	data["oidc_auth"] = oidcAuthConfig
+	data["sso_auth"] = ssoAuthConfig
 
 	affiliateSetting, err := h.settings.GetAffiliateSettingMap()
 	if err != nil {
