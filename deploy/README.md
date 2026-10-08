@@ -4,14 +4,16 @@
 
 ## 1. 发布自己的镜像
 
-将本目录和 `.github/workflows/publish-image.yml` 合并到 fork 的 `main` 后，从已通过 CI 的提交创建一个未用过的 `v*` 标签并推送：
+将本目录和 `.github/workflows/publish-image.yml` 合并到 fork 的 `main` 后，从已通过 CI 的提交创建一个未用过的 `vX.Y.Z-N` 标签并推送。`X.Y.Z` 沿用该发布所维护的版本基线，`N` 是从 1 开始的 fork 发布序号：
 
 ```bash
-git tag v0.1.0-kano.1
-git push origin v0.1.0-kano.1
+git tag v0.1.0-1
+git push origin v0.1.0-1
 ```
 
 等待 GitHub Actions 的 **Publish fork image** 完成。镜像地址为 `ghcr.io/qianmokano/dujiao-next:<标签>`。GitHub Container Registry 首次发布的包默认是私有的；在 GitHub 的 Packages 页面将该镜像设为 Public，VPS 才能免登录拉取。不要使用程序后台的上游一键更新功能管理这个 fork。
+
+从下一次发布起使用新格式；同一基线后续依次为 `v0.1.0-2`、`v0.1.0-3`，基线升级后从新版本的 `-1` 开始。历史 `v0.1.0-kano.N` 标签和镜像保留原名，不移动或重用。镜像与二进制发布工作流都会校验标签格式及提交是否属于 fork `main`。
 
 ## 2. 准备 VPS
 
