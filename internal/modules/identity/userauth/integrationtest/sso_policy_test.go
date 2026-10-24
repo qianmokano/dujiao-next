@@ -126,7 +126,9 @@ func TestUnifiedPolicyCoreAndOldChallenges(t *testing.T) {
 			_, _, _, err := svc.Register("buyer@example.com", "password", "code", "", true, true)
 			return err
 		},
-		func() error { return svc.SendVerifyCode(context.Background(), "buyer@example.com", "reset", "en-US", "") },
+		func() error {
+			return svc.SendVerifyCode(context.Background(), "buyer@example.com", "reset", "en-US", "")
+		},
 		func() error { return svc.ResetPassword("buyer@example.com", "code", "password") },
 		func() error { return svc.ChangePassword(1, "old", "new") },
 		func() error {
