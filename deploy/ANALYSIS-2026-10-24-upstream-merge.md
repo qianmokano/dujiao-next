@@ -45,16 +45,13 @@
 
 ## 下一步
 
-1. **阻塞：fork 仓库 GitHub Actions 不触发**（2026-10-24 发现）。PR #23 的
-   pull_request 事件、空提交 synchronize、close/reopen、push 到 dev 均不产生任何
-   workflow run；check suites 只有第三方应用（vercel/cloudflare）且停滞 queued。
-   同时上游仓库同日可正常运行 ci（误建的上游 PR #373 曾触发，其失败为上游自身
-   workflow 文件差异，与本分支代码无关）。排除项：Actions 权限 enabled、workflow
-   状态 active、仓库 public（免费不限量）、workflow 文件与 10-08 成功运行时字节
-   一致、平台状态页无进行中故障。需人工查看
-   https://github.com/qianmokano/dujiao-next/actions 页面横幅（账号标记/暂停类
-   提示）或联系 GitHub 支持。修复后 PR #23 会正常出检查。
-2. CI 通过后合入 PR #23，打新标签（沿用 `vX.Y.Z-N` 命名），发布镜像。
+1. ~~阻塞：fork 仓库 GitHub Actions 不触发~~ 已恢复（用户侧处理）。恢复后旧事件
+   不补发，close/reopen PR #23 重新触发 ci；首次因 sso_policy_test.go gofmt 失败，
+   修复后通过。
+2. ~~CI 通过后合入 PR #23，打新标签发布~~ 已完成：main 合并提交 `0a1b19d4`，
+   main push ci 通过，标签 `v0.1.0-1`（首个 `vX.Y.Z-N` 规则标签），Publish fork
+   image 与 goreleaser 均成功。发布详情见
+   [RELEASE-2026-10-24-upstream-merge.md](RELEASE-2026-10-24-upstream-merge.md)。
 3. VPS 更新前按 deploy/README.md 备份；本次上游含数据库无关变更，但仍按完整流程执行。
 4. 部署后重点回归：登录（SSO-only 与本地降级）、注册（含邀请码开关关闭时）、
    采购单状态流转、佣金创建。线上 SSO-only 模式下邀请码注册不生效（本地注册被守卫拒绝），属预期。
