@@ -45,9 +45,18 @@
 
 ## 下一步
 
-1. 推送分支并发起 PR，等待 `ci` 工作流通过后合入 fork `main`。
-2. 合并后打新标签（沿用 `vX.Y.Z-N` 命名，当前基线见 RELEASE-2026-10-08-version-naming.md），发布镜像。
+1. **阻塞：fork 仓库 GitHub Actions 不触发**（2026-10-24 发现）。PR #23 的
+   pull_request 事件、空提交 synchronize、close/reopen、push 到 dev 均不产生任何
+   workflow run；check suites 只有第三方应用（vercel/cloudflare）且停滞 queued。
+   同时上游仓库同日可正常运行 ci（误建的上游 PR #373 曾触发，其失败为上游自身
+   workflow 文件差异，与本分支代码无关）。排除项：Actions 权限 enabled、workflow
+   状态 active、仓库 public（免费不限量）、workflow 文件与 10-08 成功运行时字节
+   一致、平台状态页无进行中故障。需人工查看
+   https://github.com/qianmokano/dujiao-next/actions 页面横幅（账号标记/暂停类
+   提示）或联系 GitHub 支持。修复后 PR #23 会正常出检查。
+2. CI 通过后合入 PR #23，打新标签（沿用 `vX.Y.Z-N` 命名），发布镜像。
 3. VPS 更新前按 deploy/README.md 备份；本次上游含数据库无关变更，但仍按完整流程执行。
 4. 部署后重点回归：登录（SSO-only 与本地降级）、注册（含邀请码开关关闭时）、
    采购单状态流转、佣金创建。线上 SSO-only 模式下邀请码注册不生效（本地注册被守卫拒绝），属预期。
 5. 后续可评估：是否把上游邀请码与 Casdoor 统一账号体系打通（当前为独立能力）。
+6. 备注操作记录：曾误在上游仓库创建 PR #373（已关闭并留言）；诊断用 dev 分支已删除。
