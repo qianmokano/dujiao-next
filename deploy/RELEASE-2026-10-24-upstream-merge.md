@@ -14,12 +14,18 @@
 
 ## VPS 更新步骤
 
-按 deploy/README.md 执行；本次无数据库迁移，仍按完整备份流程操作：
+已于 2026-10-24 19:03 (UTC+8) 执行完毕，线上现为 `v0.1.0-1`：
 
-1. 备份 config.yml、SQLite 数据目录、上传目录、Redis 数据卷。
-2. `.env` 中 `APP_IMAGE=ghcr.io/qianmokano/dujiao-next:v0.1.0-1`。
-3. `docker compose pull app` → 停应用与 Redis → `docker compose up -d`。
-4. 验证 `https://store.kanoapi.top/health`、登录（SSO-only）、下单、采购单状态。
+- 使用 `deploy/update-image.sh`（scp 至 VPS /tmp 后以 sudo 运行）。
+- 备份：`backups/predeploy-20261024T110345Z`（dujiao-files.tar.gz 4.4MB + redis-data.tar.gz，校验通过）。
+- 回滚参考：更新前镜像为 `v0.1.0-kano.19`（`.env.bak.20261024190340`）；
+  若需回退且数据库已迁移，须连同上述备份一起恢复。
+- 验证通过：内外 health ok；首页/admin 200；`/api/v1/public/products`、
+  `/api/v1/public/config` 返回真实数据；app.log 无 error/fatal；
+  `sso_auth` 下发正常（enabled=true, only_enabled=true, auth.kanoapi.top），
+  registration_enabled=false（SSO-only 策略），invite_only_enabled=false（新开关存在且关闭）。
+- 脚本小瑕疵：1/6 步骤记录旧镜像的 python 解析在 compose 新版 JSON 数组输出下报错
+  （不影响流程，旧镜像可从 .env.bak 查得），待修。
 
 ## 部署后重点回归
 
